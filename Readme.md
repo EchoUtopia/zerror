@@ -20,17 +20,6 @@
 
 see in examples directory
 
-## Result Show:
-
-log result show:
-
-![log result show](./log.png)
-
-***
-
-response show:
-![response show](./response.png)
-
 
 ## Why is zerror made
 

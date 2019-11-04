@@ -20,17 +20,6 @@
 example目录查看
 
 
-## 效果展示:
-
-日志效果:
-
-![log result show](./log.png)
-
-***
-
-响应效果:
-![response show](./response.png)
-
 ## 为什么要写Zerror
 
 我想把错误明确地组织起来，以组分类，方便管理和重用，而不是到处 `return erros.New("***")`
