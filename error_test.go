@@ -19,6 +19,11 @@ type TestErr1 struct {
 	Prefix string
 }
 
+func TestMain(m *testing.M) {
+	manager = New()
+	m.Run()
+}
+
 func TestGenerateCode(t *testing.T) {
 	data := &TestErr{
 		TestErr1:            new(Def),
@@ -55,9 +60,9 @@ func ExampleJsonDumpGroups() {
 		ThisISAVeryLongName: new(Def),
 		Err:                 &Def{Code: `custom-code`},
 	}
-	RegisterGroups(data)
+	manager.RegisterGroups(data)
 	fmt.Println(JsonDumpGroups(``))
-	errGroups = nil
+	manager.errGroups = nil
 	// Output:
 	// [
 	// {

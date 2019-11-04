@@ -42,14 +42,6 @@ type AuthErr struct {
 	Expired *zerror.Def
 }
 
-func init() {
-	// error group must be registered
-	zerror.RegisterGroups(Common, Auth)
-	logger := logrus.StandardLogger()
-	logrus.SetLevel(logrus.DebugLevel)
-	zerror.InitLogger(logger)
-}
-
 func ErrHandler(c *gin.Context) {
 	originalErr := errors.New(`original error`)
 
@@ -70,6 +62,14 @@ func ErrHandler(c *gin.Context) {
 }
 
 func main() {
+
+	logger := logrus.StandardLogger()
+	logrus.SetLevel(logrus.DebugLevel)
+	manager := zerror.New(zerror.Logger(logger))
+
+	// error group must be registered
+	manager.RegisterGroups(Common, Auth)
+
 	r := gin.Default()
 	r.GET(`/error`, ErrHandler)
 	r.Run(`:8989`)

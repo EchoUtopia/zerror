@@ -12,13 +12,13 @@ import (
 	"sync/atomic"
 )
 
+const (
+	Undefined = `undefined`
+)
+
 var (
-	errGroups           = []interface{}{}
-	CodeConneter        = ":"
-	WordConnector       = "-"
-	registered    int32 = 0
-	Debug               = false
-	CodeUnknow          = `unkown`
+	registered int32
+	manager    *Manager
 )
 
 // error can be used alone, like:
@@ -52,6 +52,14 @@ type Def struct {
 	Msg         string       `json:"-"`
 	LogLevel    logrus.Level `json:"-"`
 	Description string       `json:"description"`
+}
+
+type Manager struct {
+	wordConnector string
+	codeConnector string
+	debug         bool
+	logger        logrus.FieldLogger
+	errGroups     []interface{}
 }
 
 // type Responser interface {
@@ -115,14 +123,8 @@ func (def *Def) WrapAsInner(err error) *zerror {
 	return te
 }
 
-var logger logrus.FieldLogger = logrus.New()
-
-func InitLogger(l logrus.FieldLogger) {
-	logger = l
-}
-
-var UnkownErrorDef = &Def{
-	Code:        CodeUnknow,
+var UndefinedErrorDef = &Def{
+	Code:        Undefined,
 	HttpCode:    500,
 	Msg:         "unkown error",
 	LogLevel:    logrus.ErrorLevel,
@@ -137,7 +139,7 @@ func JSON(c *gin.Context, err error) {
 	var def *Def
 	zerr, ok := err.(*zerror)
 	if !ok {
-		def = UnkownErrorDef
+		def = UndefinedErrorDef
 		zerr = &zerror{
 			callLocation: "",
 			callerName:   "",
@@ -154,7 +156,7 @@ func JSON(c *gin.Context, err error) {
 		Code: def.Code,
 		Data: nil,
 	}
-	if Debug {
+	if manager.debug {
 		s.Msg = &def.Description
 	}
 	httpCode := def.HttpCode
@@ -169,7 +171,7 @@ func JSON(c *gin.Context, err error) {
 		fields[`call_location`] = l
 	}
 
-	logger.WithFields(fields).WithError(zerr.cause).Log(def.LogLevel, def.Msg)
+	manager.logger.WithFields(fields).WithError(zerr.cause).Log(def.LogLevel, def.Msg)
 }
 
 func (def *Def) JSON(c *gin.Context, err error) {
@@ -180,7 +182,7 @@ func (def *Def) JSON(c *gin.Context, err error) {
 		Code: def.Code,
 		Data: nil,
 	}
-	if Debug {
+	if manager.debug {
 		s.Msg = &def.Description
 	}
 	httpCode := def.HttpCode
@@ -192,7 +194,7 @@ func (def *Def) JSON(c *gin.Context, err error) {
 	if def.LogLevel == logrus.DebugLevel {
 		fields[`call_location`] = l
 	}
-	logger.WithFields(fields).WithError(err).Log(def.LogLevel, def.Msg)
+	manager.logger.WithFields(fields).WithError(err).Log(def.LogLevel, def.Msg)
 }
 
 func getCaller(debugLevel logrus.Level, skip int) (string, string) {
@@ -214,7 +216,7 @@ func GetStandardName(name string) string {
 	lastLower := true
 	for k, v := range name {
 		if v >= 'A' && v <= 'Z' && k != 0 && lastLower {
-			out += WordConnector
+			out += manager.wordConnector
 			lastLower = false
 		} else {
 			lastLower = true
@@ -223,16 +225,6 @@ func GetStandardName(name string) string {
 	}
 	lowered := strings.ToLower(out)
 	return lowered
-}
-
-func RegisterGroups(groups ...interface{}) {
-	if !atomic.CompareAndSwapInt32(&registered, 0, 1) {
-		panic(`groups registered twice`)
-	}
-	for _, v := range groups {
-		InitErrGroup(v)
-		errGroups = append(errGroups, v)
-	}
 }
 
 // the parameters must be error group ptr,
@@ -251,7 +243,7 @@ func InitErrGroup(group interface{}) {
 	if typ.Kind() != reflect.Struct {
 		logrus.Panicf(`moduleErr not struct, but: %s`, typ.Kind())
 	}
-	prefix := GetStandardName(typ.Name()) + CodeConneter
+	prefix := GetStandardName(typ.Name()) + manager.codeConnector
 	nameField, ok := typ.FieldByName(`Prefix`)
 	if ok {
 		if nameField.Type.Kind() != reflect.String {
@@ -261,7 +253,7 @@ func InitErrGroup(group interface{}) {
 		if nameVal == `` {
 			prefix = ``
 		} else {
-			prefix = nameVal + CodeConneter
+			prefix = nameVal + manager.codeConnector
 		}
 	}
 	var zerr *Def
@@ -287,9 +279,39 @@ func InitErrGroup(group interface{}) {
 }
 
 func JsonDumpGroups(ident string) string {
-	mared, err := json.MarshalIndent(errGroups, ``, ident)
+	mared, err := json.MarshalIndent(manager.errGroups, ``, ident)
 	if err != nil {
 		panic(err)
 	}
 	return string(mared)
+}
+
+func New(options ...Option) *Manager {
+	do := &Options{
+		wordConnector: `-`,
+		codeConnector: `:`,
+		debug:         false,
+		logger:        logrus.StandardLogger(),
+	}
+	for _, setter := range options {
+		setter(do)
+	}
+	m := &Manager{
+		wordConnector: do.wordConnector,
+		codeConnector: do.codeConnector,
+		debug:         do.debug,
+		logger:        do.logger,
+	}
+	manager = m
+	return m
+}
+
+func (m *Manager) RegisterGroups(groups ...interface{}) {
+	if !atomic.CompareAndSwapInt32(&registered, 0, 1) {
+		panic(`groups registered twice`)
+	}
+	for _, v := range groups {
+		InitErrGroup(v)
+		m.errGroups = append(m.errGroups, v)
+	}
 }
