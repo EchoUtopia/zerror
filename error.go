@@ -100,16 +100,21 @@ func (ze *zerror) GetCaller() (string, string) {
 }
 
 func (def *Def) Wrap(err error) *zerror {
-	l, n := getCaller(def.LogLevel, 2)
+	l, n := getCaller(def, 2)
 	org, ok := err.(*zerror)
 	if ok {
-		return &zerror{
+		zerr := &zerror{
 			callLocation: org.callLocation,
 			callerName:   n + `/` + org.callerName,
 			cause:        org,
 			def:          def,
 			internal:     org.internal,
 		}
+		// if the original error is internal ,then the final error is internal
+		if org.def.Code == CodeInternal {
+			zerr.def = org.def
+		}
+		return zerr
 	}
 	return &zerror{
 		callLocation: l,
@@ -152,7 +157,7 @@ func JSON(c *gin.Context, err error) {
 			def:          def,
 			internal:     true,
 		}
-		zerr.callLocation, zerr.callerName = getCaller(def.LogLevel, 2)
+		zerr.callLocation, zerr.callerName = getCaller(def, 2)
 	} else {
 		def = zerr.def
 	}
@@ -177,9 +182,9 @@ func (def *Def) JSON(c *gin.Context, err error) {
 	c.JSON(httpCode, getResponse(def))
 	c.Abort()
 	fields := logrus.Fields{}
-	l, n := getCaller(def.LogLevel, 2)
+	l, n := getCaller(def, 2)
 	fields[`caller`] = n
-	if def.LogLevel == logrus.DebugLevel {
+	if l != `` {
 		fields[`call_location`] = l
 	}
 	manager.logger.WithFields(fields).WithError(err).Log(def.LogLevel, def.Msg)
@@ -194,10 +199,10 @@ func getResponse(def *Def) Responser {
 	return s
 }
 
-func getCaller(debugLevel logrus.Level, skip int) (string, string) {
+func getCaller(def *Def, skip int) (string, string) {
 	pc, file, line, ok := runtime.Caller(skip)
 	var callLocation, callerName string
-	if ok && debugLevel == logrus.DebugLevel {
+	if ok && (def.LogLevel == logrus.DebugLevel || def.Code == CodeInternal || def.Code == CodeUndefined) {
 		callLocation = file + "/" + strconv.Itoa(line)
 	}
 	if ok {

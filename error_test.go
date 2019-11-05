@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -87,7 +86,8 @@ func ExampleJsonDumpGroups() {
 }
 
 func ExampleGetCaller() {
-	fmt.Println(getCaller(logrus.InfoLevel, 1))
+	_, caller := getCaller(InternalError, 1)
+	fmt.Println(caller)
 	// Output:
 	// ExampleGetCaller
 }
@@ -123,7 +123,8 @@ func ExampleCustomResponser() {
 	m := New(
 		WithResponser(func() Responser {
 			return new(customeRsp)
-		}), RespondMessage(true))
+		}),
+	)
 	m.RegisterGroups()
 	defer unregister()
 	rsp := getResponse(InternalError)
