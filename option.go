@@ -3,10 +3,11 @@ package zerror
 import "github.com/sirupsen/logrus"
 
 type Options struct {
-	wordConnector string
-	codeConnector string
-	debug         bool
-	logger        logrus.FieldLogger
+	wordConnector  string
+	codeConnector  string
+	RespondMessage bool
+	logger         logrus.FieldLogger
+	responseFunc   func() Responser
 }
 
 type Option func(*Options)
@@ -23,14 +24,20 @@ func CodeConnector(cc string) Option {
 	}
 }
 
-func Debug(debug bool) Option {
+func RespondMessage(respondMessage bool) Option {
 	return func(options *Options) {
-		options.debug = debug
+		options.RespondMessage = respondMessage
 	}
 }
 
 func Logger(logger logrus.FieldLogger) Option {
 	return func(options *Options) {
 		options.logger = logger
+	}
+}
+
+func WithResponser(rf func() Responser) Option {
+	return func(options *Options) {
+		options.responseFunc = rf
 	}
 }

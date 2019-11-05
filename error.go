@@ -56,22 +56,27 @@ type Def struct {
 }
 
 type Manager struct {
-	wordConnector string
-	codeConnector string
-	debug         bool
-	logger        logrus.FieldLogger
-	errGroups     []interface{}
+	Options
+	errGroups []interface{}
 }
 
-// type Responser interface {
-// 	SetCode(code string)
-// 	GetCode() string
-// }
+type Responser interface {
+	SetCode(code string)
+	SetMessage(msg string)
+}
 
-type Response struct {
+type stdResponse struct {
 	Code string      `json:"code"`
 	Data interface{} `json:"data"`
 	Msg  *string     `json:"msg"`
+}
+
+func (r *stdResponse) SetCode(code string) {
+	r.Code = code
+}
+
+func (r *stdResponse) SetMessage(msg string) {
+	r.Msg = &msg
 }
 
 type zerror struct {
@@ -152,14 +157,7 @@ func JSON(c *gin.Context, err error) {
 		def = zerr.def
 	}
 
-	s := &Response{
-		Code: def.Code,
-		Data: nil,
-	}
-	if manager.debug {
-		s.Msg = &def.Description
-	}
-	c.JSON(def.HttpCode, s)
+	c.JSON(def.HttpCode, getResponse(def))
 	c.Abort()
 	l, n := zerr.GetCaller()
 	fields := logrus.Fields{`caller`: n}
@@ -174,15 +172,9 @@ func (def *Def) JSON(c *gin.Context, err error) {
 	if registered == 0 {
 		panic(`groups not registered`)
 	}
-	s := &Response{
-		Code: def.Code,
-		Data: nil,
-	}
-	if manager.debug {
-		s.Msg = &def.Description
-	}
+
 	httpCode := def.HttpCode
-	c.JSON(httpCode, s)
+	c.JSON(httpCode, getResponse(def))
 	c.Abort()
 	fields := logrus.Fields{}
 	l, n := getCaller(def.LogLevel, 2)
@@ -191,6 +183,15 @@ func (def *Def) JSON(c *gin.Context, err error) {
 		fields[`call_location`] = l
 	}
 	manager.logger.WithFields(fields).WithError(err).Log(def.LogLevel, def.Msg)
+}
+
+func getResponse(def *Def) Responser {
+	s := manager.responseFunc()
+	s.SetCode(def.Code)
+	if manager.RespondMessage {
+		s.SetMessage(def.Description)
+	}
+	return s
 }
 
 func getCaller(debugLevel logrus.Level, skip int) (string, string) {
@@ -284,19 +285,19 @@ func JsonDumpGroups(ident string) string {
 
 func New(options ...Option) *Manager {
 	do := &Options{
-		wordConnector: `-`,
-		codeConnector: `:`,
-		debug:         false,
-		logger:        logrus.StandardLogger(),
+		wordConnector:  `-`,
+		codeConnector:  `:`,
+		RespondMessage: true,
+		logger:         logrus.StandardLogger(),
+		responseFunc: func() Responser {
+			return new(stdResponse)
+		},
 	}
 	for _, setter := range options {
 		setter(do)
 	}
 	m := &Manager{
-		wordConnector: do.wordConnector,
-		codeConnector: do.codeConnector,
-		debug:         do.debug,
-		logger:        do.logger,
+		Options: *do,
 	}
 	manager = m
 	return m
@@ -310,4 +311,10 @@ func (m *Manager) RegisterGroups(groups ...interface{}) {
 		InitErrGroup(v)
 		m.errGroups = append(m.errGroups, v)
 	}
+}
+
+// for test
+func unregister() {
+	registered = 0
+	manager.errGroups = nil
 }

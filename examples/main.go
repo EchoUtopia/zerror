@@ -67,7 +67,10 @@ func main() {
 
 	logger := logrus.StandardLogger()
 	logrus.SetLevel(logrus.DebugLevel)
-	manager := zerror.New(zerror.Logger(logger))
+	manager := zerror.New(
+		zerror.Logger(logger),
+		zerror.RespondMessage(false),
+	)
 
 	// error group must be registered
 	manager.RegisterGroups(Common, Auth)

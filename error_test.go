@@ -1,6 +1,7 @@
 package zerror
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/sirupsen/logrus"
@@ -102,4 +103,35 @@ func ExampleNested() {
 	fmt.Println(ze.Error(), ze.internal, ze.callerName, ze.def.Code)
 	// Output:
 	// msg1: msg2: original-error false ExampleNested/ExampleNested test-err:test-err1
+}
+
+type customeRsp struct {
+	A   string
+	Msg string
+}
+
+func (c *customeRsp) SetCode(code string) {
+	c.A = code
+}
+
+func (c *customeRsp) SetMessage(msg string) {
+	c.Msg = msg
+}
+
+func ExampleCustomResponser() {
+	unregister()
+	m := New(
+		WithResponser(func() Responser {
+			return new(customeRsp)
+		}), RespondMessage(true))
+	m.RegisterGroups()
+	defer unregister()
+	rsp := getResponse(InternalError)
+	mared, err := json.Marshal(rsp)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(mared))
+	// Output:
+	// {"A":"zerror:internal","Msg":"this is server internal error, please contact admin"}
 }
