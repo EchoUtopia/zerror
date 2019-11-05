@@ -13,7 +13,8 @@ import (
 )
 
 const (
-	Undefined = `undefined`
+	CodeUndefined = `zerror:undefined`
+	CodeInternal  = `zerror:internal`
 )
 
 var (
@@ -93,8 +94,8 @@ func (ze *zerror) GetCaller() (string, string) {
 	return ze.callLocation, ze.callerName
 }
 
-func (def *Def) wrap(err error) *zerror {
-	l, n := getCaller(def.LogLevel, 3)
+func (def *Def) Wrap(err error) *zerror {
+	l, n := getCaller(def.LogLevel, 2)
 	org, ok := err.(*zerror)
 	if ok {
 		return &zerror{
@@ -113,22 +114,21 @@ func (def *Def) wrap(err error) *zerror {
 	}
 }
 
-func (def *Def) Wrap(err error) *zerror {
-	return def.wrap(err)
-}
-
-func (def *Def) WrapAsInner(err error) *zerror {
-	te := def.wrap(err)
-	te.internal = true
-	return te
-}
-
-var UndefinedErrorDef = &Def{
-	Code:        Undefined,
+// if err is not zerr.Def, then this err will be used
+var UndefinedError = &Def{
+	Code:        CodeUndefined,
 	HttpCode:    500,
 	Msg:         "unkown error",
 	LogLevel:    logrus.ErrorLevel,
-	Description: "",
+	Description: "error not defined, please contact admin",
+}
+
+var InternalError = &Def{
+	Code:        CodeInternal,
+	HttpCode:    500,
+	Msg:         `internal error`,
+	LogLevel:    logrus.ErrorLevel,
+	Description: `this is server internal error, please contact admin`,
 }
 
 //
@@ -139,7 +139,7 @@ func JSON(c *gin.Context, err error) {
 	var def *Def
 	zerr, ok := err.(*zerror)
 	if !ok {
-		def = UndefinedErrorDef
+		def = UndefinedError
 		zerr = &zerror{
 			callLocation: "",
 			callerName:   "",
@@ -159,11 +159,7 @@ func JSON(c *gin.Context, err error) {
 	if manager.debug {
 		s.Msg = &def.Description
 	}
-	httpCode := def.HttpCode
-	if zerr.internal {
-		httpCode = 500
-	}
-	c.JSON(httpCode, s)
+	c.JSON(def.HttpCode, s)
 	c.Abort()
 	l, n := zerr.GetCaller()
 	fields := logrus.Fields{`caller`: n}
@@ -200,7 +196,7 @@ func (def *Def) JSON(c *gin.Context, err error) {
 func getCaller(debugLevel logrus.Level, skip int) (string, string) {
 	pc, file, line, ok := runtime.Caller(skip)
 	var callLocation, callerName string
-	if debugLevel == logrus.DebugLevel {
+	if ok && debugLevel == logrus.DebugLevel {
 		callLocation = file + "/" + strconv.Itoa(line)
 	}
 	if ok {
