@@ -65,17 +65,17 @@ type Responser interface {
 	SetMessage(msg string)
 }
 
-type stdResponse struct {
+type StdResponse struct {
 	Code string      `json:"code"`
 	Data interface{} `json:"data"`
 	Msg  *string     `json:"msg"`
 }
 
-func (r *stdResponse) SetCode(code string) {
+func (r *StdResponse) SetCode(code string) {
 	r.Code = code
 }
 
-func (r *stdResponse) SetMessage(msg string) {
+func (r *StdResponse) SetMessage(msg string) {
 	r.Msg = &msg
 }
 
@@ -290,7 +290,7 @@ func New(options ...Option) *Manager {
 		RespondMessage: true,
 		logger:         logrus.StandardLogger(),
 		responseFunc: func() Responser {
-			return new(stdResponse)
+			return new(StdResponse)
 		},
 	}
 	for _, setter := range options {
