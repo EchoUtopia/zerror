@@ -79,23 +79,23 @@ func main() {
 	r.GET(`/error`, ErrHandler)
 	r.Run(`:8989`)
 
-	// when access /error, response is : `{"code":"args","data":null,"msg":null}`, http code is 400
+	// when access /error, response is : `{"code":"args","data":null}`, http code is 400
 	// log is :
 	// DEBU[0010] args err                                      call_location=/Users/echo/go/src/github.com/EchoUtopia/zerror/examples/main.go/56 caller=ErrHandler error="original error"
 
-	// when access /error?type=original, response is : `{"code":"unkown","data":null,"msg":null}`, http code is 500
+	// when access /error?type=original, response is : `{"code":"unkown","data":null}`, http code is 500
 	// log is :
 	// ERRO[0001] unkown error                                  caller=ErrHandler error="original error"
 
-	// when access /error?type=internal, response is `{"code":"zerror:internal","data":null,"msg":null}`, http code is 500
+	// when access /error?type=internal, response is `{"code":"zerror:internal","data":null}`, http code is 500
 	// log is :
 	// ERRO[0002] internal error                                call_location=/Users/echo/go/src/github.com/EchoUtopia/zerror/examples/main.go/48 caller=ErrHandler/ErrHandler error="args err: original error"
 
-	// when access /error?type=straight, response is `{"code":"sms:code","data":null,"msg":null}`, http code is 500
+	// when access /error?type=straight, response is `{"code":"sms:code","data":null}`, http code is 500
 	// log is :
 	// ERRO[0064] sms code                                      caller=ErrHandler error="original error"
 
-	// when access /error?type=undefined, response is `{"code":"zerror:undefined","data":null,"msg":null}`, http code is 500
+	// when access /error?type=undefined, response is `{"code":"zerror:undefined","data":null}`, http code is 500
 	// log is :
 	// ERRO[0006] unkown error                                  caller=ErrHandler error="original error"
 }

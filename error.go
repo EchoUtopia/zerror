@@ -68,7 +68,7 @@ type Responser interface {
 type StdResponse struct {
 	Code string      `json:"code"`
 	Data interface{} `json:"data"`
-	Msg  *string     `json:"msg"`
+	Msg  *string     `json:"msg,omitempty"`
 }
 
 func (r *StdResponse) SetCode(code string) {
@@ -84,7 +84,6 @@ type zerror struct {
 	callerName   string
 	cause        error
 	def          *Def
-	internal     bool
 }
 
 func (ze *zerror) Cause() error { return ze.cause }
@@ -108,7 +107,6 @@ func (def *Def) Wrap(err error) *zerror {
 			callerName:   n + `/` + org.callerName,
 			cause:        org,
 			def:          def,
-			internal:     org.internal,
 		}
 		// if the original error is internal ,then the final error is internal
 		if org.def.Code == CodeInternal {
@@ -155,7 +153,6 @@ func JSON(c *gin.Context, err error) {
 			callerName:   "",
 			cause:        err,
 			def:          def,
-			internal:     true,
 		}
 		zerr.callLocation, zerr.callerName = getCaller(def, 2)
 	} else {
@@ -191,6 +188,7 @@ func (def *Def) JSON(c *gin.Context, err error) {
 }
 
 func getResponse(def *Def) Responser {
+
 	s := manager.responseFunc()
 	s.SetCode(def.Code)
 	if manager.RespondMessage {

@@ -100,9 +100,9 @@ func ExampleNested() {
 	}
 	InitErrGroup(data)
 	ze := data.TestErr1.Wrap(data.Err.Wrap(errors.New(`original-error`)))
-	fmt.Println(ze.Error(), ze.internal, ze.callerName, ze.def.Code)
+	fmt.Println(ze.Error(), ze.callerName, ze.def.Code)
 	// Output:
-	// msg1: msg2: original-error false ExampleNested/ExampleNested test-err:test-err1
+	// msg1: msg2: original-error ExampleNested/ExampleNested test-err:test-err1
 }
 
 type customeRsp struct {
