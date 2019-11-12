@@ -68,7 +68,7 @@ type Responser interface {
 type StdResponse struct {
 	Code string      `json:"code"`
 	Data interface{} `json:"data"`
-	Msg  *string     `json:"msg,omitempty"`
+	Msg  *string     `json:"msg"`
 }
 
 func (r *StdResponse) SetCode(code string) {
@@ -94,8 +94,43 @@ func (ze *zerror) Error() string {
 	return ze.def.Msg + ": " + ze.cause.Error()
 }
 
+func DefaultDef(msg string) *Def {
+	return &Def{
+		Code:        "",
+		HttpCode:    manager.defaultHttpCode,
+		Msg:         msg,
+		LogLevel:    manager.defaultLogLevel,
+		Description: "",
+	}
+}
+
 func (ze *zerror) GetCaller() (string, string) {
 	return ze.callLocation, ze.callerName
+}
+
+func (def *Def) SetCode(code string) *Def {
+	def.Code = code
+	return def
+}
+
+func (def *Def) SetHttpCode(code int) *Def {
+	def.HttpCode = code
+	return def
+}
+
+func (def *Def) SetMsg(msg string) *Def {
+	def.Msg = msg
+	return def
+}
+
+func (def *Def) SetLogLevel(level logrus.Level) *Def {
+	def.LogLevel = level
+	return def
+}
+
+func (def *Def) SetDesc(desc string) *Def {
+	def.Description = desc
+	return def
 }
 
 func (def *Def) Wrap(err error) *zerror {
@@ -139,6 +174,11 @@ var InternalError = &Def{
 	Description: `this is server internal error, please contact admin`,
 }
 
+
+func (def *Def) Log(err error){
+	def.log(err, 2)
+}
+
 //
 func JSON(c *gin.Context, err error) {
 	if registered == 0 {
@@ -159,7 +199,7 @@ func JSON(c *gin.Context, err error) {
 		def = zerr.def
 	}
 
-	c.JSON(def.HttpCode, getResponse(def))
+	c.JSON(def.HttpCode, def.GetResponser())
 	c.Abort()
 	l, n := zerr.GetCaller()
 	fields := logrus.Fields{`caller`: n}
@@ -170,31 +210,37 @@ func JSON(c *gin.Context, err error) {
 	manager.logger.WithFields(fields).WithError(zerr.cause).Log(def.LogLevel, def.Msg)
 }
 
+
 func (def *Def) JSON(c *gin.Context, err error) {
 	if registered == 0 {
 		panic(`groups not registered`)
 	}
 
 	httpCode := def.HttpCode
-	c.JSON(httpCode, getResponse(def))
+	c.JSON(httpCode, def.GetResponser())
 	c.Abort()
-	fields := logrus.Fields{}
-	l, n := getCaller(def, 2)
-	fields[`caller`] = n
-	if l != `` {
-		fields[`call_location`] = l
-	}
-	manager.logger.WithFields(fields).WithError(err).Log(def.LogLevel, def.Msg)
+	def.log(err, 3)
 }
 
-func getResponse(def *Def) Responser {
 
+func (def *Def)GetResponser() Responser {
 	s := manager.responseFunc()
 	s.SetCode(def.Code)
 	if manager.RespondMessage {
 		s.SetMessage(def.Description)
 	}
 	return s
+}
+
+func (def *Def) log(err error, skip int){
+
+	fields := logrus.Fields{}
+	l, n := getCaller(def, skip)
+	fields[`caller`] = n
+	if l != `` {
+		fields[`call_location`] = l
+	}
+	manager.logger.WithFields(fields).WithError(err).Log(def.LogLevel, def.Msg)
 }
 
 func getCaller(def *Def, skip int) (string, string) {
@@ -295,6 +341,8 @@ func New(options ...Option) *Manager {
 		responseFunc: func() Responser {
 			return new(StdResponse)
 		},
+		defaultLogLevel: logrus.ErrorLevel,
+		defaultHttpCode: 400,
 	}
 	for _, setter := range options {
 		setter(do)

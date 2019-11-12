@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -127,7 +128,7 @@ func ExampleCustomResponser() {
 	)
 	m.RegisterGroups()
 	defer unregister()
-	rsp := getResponse(InternalError)
+	rsp := InternalError.GetResponser()
 	mared, err := json.Marshal(rsp)
 	if err != nil {
 		panic(err)
@@ -135,4 +136,16 @@ func ExampleCustomResponser() {
 	fmt.Println(string(mared))
 	// Output:
 	// {"A":"zerror:internal","Msg":"this is server internal error, please contact admin"}
+}
+
+func ExampleDefaultDef(){
+
+	unregister()
+	m := New(DefaultHttpCode(500), DefaultLogLevel(logrus.InfoLevel))
+	errDef := DefaultDef(`msg`)
+	m.RegisterGroups()
+	defer unregister()
+	fmt.Printf("%+v\n", errDef)
+	// Output:
+	// &{Code: HttpCode:500 Msg:msg LogLevel:info Description:}
 }

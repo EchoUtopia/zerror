@@ -8,6 +8,8 @@ type Options struct {
 	RespondMessage bool
 	logger         logrus.FieldLogger
 	responseFunc   func() Responser
+	defaultHttpCode int
+	defaultLogLevel logrus.Level
 }
 
 type Option func(*Options)
@@ -39,5 +41,17 @@ func Logger(logger logrus.FieldLogger) Option {
 func WithResponser(rf func() Responser) Option {
 	return func(options *Options) {
 		options.responseFunc = rf
+	}
+}
+
+func DefaultHttpCode(hc int)Option{
+	return func(options *Options) {
+		options.defaultHttpCode = hc
+	}
+}
+
+func DefaultLogLevel(level logrus.Level)Option{
+	return func(options *Options) {
+		options.defaultLogLevel = level
 	}
 }
