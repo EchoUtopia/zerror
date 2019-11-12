@@ -300,7 +300,7 @@ func (def *Def) log(err error, skip int){
 func getCaller(def *Def, skip int) (string, string) {
 	pc, file, line, ok := runtime.Caller(skip)
 	var callLocation, callerName string
-	if ok && (def.LogLevel == logrus.DebugLevel || def.Code == CodeInternal || def.Code == CodeUndefined) {
+	if ok && (manager.debug && def.LogLevel == logrus.DebugLevel || def.Code == CodeInternal || def.Code == CodeUndefined) {
 		callLocation = file + "/" + strconv.Itoa(line)
 	}
 	if ok {
