@@ -149,3 +149,26 @@ func ExampleDefaultDef(){
 	// Output:
 	// &{Code: HttpCode:500 Msg:msg LogLevel:info Description:}
 }
+
+func ExampleLog(){
+	unregister()
+	logger := logrus.New()
+	format := logrus.TextFormatter{
+		DisableTimestamp:          true,
+	}
+	logger.SetFormatter(&format)
+	m := New(Logger(logger))
+	m.RegisterGroups()
+	defer unregister()
+	originalError := errors.New(`original error`)
+	def := DefaultDef(`default`)
+	def.Log(originalError)
+
+	fmt.Println(def.New(`new`))
+
+	errorf := def.Errorf(`%s`, `errorf`)
+	fmt.Println(errorf.callerName, errorf.Error(), errorf.def.Msg)
+	// Output:
+	// default: new
+	// ExampleLog default: errorf default
+}

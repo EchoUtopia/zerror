@@ -2,9 +2,11 @@ package zerror
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"io"
 	"reflect"
 	"runtime"
 	"strconv"
@@ -86,6 +88,13 @@ type zerror struct {
 	def          *Def
 }
 
+
+type withMessage struct {
+	cause error
+	msg   string
+}
+
+
 func (ze *zerror) Cause() error { return ze.cause }
 func (ze *zerror) Error() string {
 	if ze.cause == nil {
@@ -93,6 +102,31 @@ func (ze *zerror) Error() string {
 	}
 	return ze.def.Msg + ": " + ze.cause.Error()
 }
+
+
+
+func (ze *zerror) GetCaller() (string, string) {
+	return ze.callLocation, ze.callerName
+}
+
+
+func (w *withMessage) Error() string { return w.msg + ": " + w.cause.Error() }
+func (w *withMessage) Cause() error  { return w.cause }
+
+func (w *withMessage) Format(s fmt.State, verb rune) {
+	switch verb {
+	case 'v':
+		if s.Flag('+') {
+			fmt.Fprintf(s, "%+v\n", w.Cause())
+			io.WriteString(s, w.msg)
+			return
+		}
+		fallthrough
+	case 's', 'q':
+		io.WriteString(s, w.Error())
+	}
+}
+
 
 func DefaultDef(msg string) *Def {
 	return &Def{
@@ -104,9 +138,6 @@ func DefaultDef(msg string) *Def {
 	}
 }
 
-func (ze *zerror) GetCaller() (string, string) {
-	return ze.callLocation, ze.callerName
-}
 
 func (def *Def) SetCode(code string) *Def {
 	def.Code = code
@@ -133,8 +164,9 @@ func (def *Def) SetDesc(desc string) *Def {
 	return def
 }
 
-func (def *Def) Wrap(err error) *zerror {
-	l, n := getCaller(def, 2)
+func (def *Def) wrap(err error, skip int) *zerror {
+
+	l, n := getCaller(def, skip)
 	org, ok := err.(*zerror)
 	if ok {
 		zerr := &zerror{
@@ -155,6 +187,28 @@ func (def *Def) Wrap(err error) *zerror {
 		cause:        err,
 		def:          def,
 	}
+}
+
+func (def *Def) Wrap(err error) *zerror {
+	return def.wrap(err, 3)
+}
+
+func (def *Def)Wrapf(err error, format string, args ...interface{}) *zerror {
+	wErr := &withMessage{
+		cause: err,
+		msg:   fmt.Sprintf(format, args...),
+	}
+	return def.wrap(wErr, 3)
+}
+
+func (def *Def) New(msg string) *zerror {
+	err := errors.New(msg)
+	return def.wrap(err, 3)
+}
+
+func (def *Def)Errorf(format string, args ...interface{})*zerror {
+	err := errors.New(fmt.Sprintf(format, args...))
+	return def.wrap(err, 3)
 }
 
 // if err is not zerr.Def, then this err will be used
