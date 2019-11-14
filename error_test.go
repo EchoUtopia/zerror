@@ -138,7 +138,7 @@ func ExampleCustomResponser() {
 	// {"A":"zerror:internal","Msg":"this is server internal error, please contact admin"}
 }
 
-func ExampleDefaultDef(){
+func ExampleDefaultDef() {
 
 	unregister()
 	m := New(DefaultHttpCode(500), DefaultLogLevel(logrus.InfoLevel))
@@ -150,11 +150,11 @@ func ExampleDefaultDef(){
 	// &{Code: HttpCode:500 Msg:msg LogLevel:info Description:}
 }
 
-func ExampleLog(){
+func ExampleLog() {
 	unregister()
 	logger := logrus.New()
 	format := logrus.TextFormatter{
-		DisableTimestamp:          true,
+		DisableTimestamp: true,
 	}
 	logger.SetFormatter(&format)
 	m := New(Logger(logger))
@@ -171,4 +171,23 @@ func ExampleLog(){
 	// Output:
 	// default: new
 	// ExampleLog default: errorf default
+}
+
+type ForDefault struct {
+	Err1 *Def
+}
+
+func ExampleDefaultDef2() {
+
+	unregister()
+	d := &ForDefault{Err1: DefaultDef(`default`)}
+	fmt.Println(d.Err1.HttpCode, d.Err1.LogLevel)
+	m := New(DefaultLogLevel(logrus.ErrorLevel), DefaultHttpCode(500))
+	m.RegisterGroups(d)
+	defer unregister()
+
+	fmt.Println(d.Err1.HttpCode, d.Err1.LogLevel)
+	// Output:
+	// -1 unknown
+	// 500 error
 }

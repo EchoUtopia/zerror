@@ -17,11 +17,14 @@ import (
 const (
 	CodeUndefined = `zerror:undefined`
 	CodeInternal  = `zerror:internal`
+
+	invalidHttpCode = -1
+	invalidLogLevel = 100
 )
 
 var (
 	registered int32
-	manager    *Manager
+	manager    = &Manager{Options: Options{defaultHttpCode: invalidHttpCode, defaultLogLevel: invalidLogLevel}}
 )
 
 // error can be used alone, like:
@@ -123,9 +126,6 @@ func (w *withMessage) Format(s fmt.State, verb rune) {
 }
 
 func DefaultDef(msg string) *Def {
-	if registered == 0 {
-		panic(`zerror manager not created`)
-	}
 	return &Def{
 		Code:        "",
 		HttpCode:    manager.defaultHttpCode,
@@ -334,7 +334,7 @@ func InitErrGroup(group interface{}) {
 	typ = typ.Elem()
 	val = val.Elem()
 	if typ.Kind() != reflect.Struct {
-		logrus.Panicf(`moduleErr not struct, but: %s`, typ.Kind())
+		logrus.Panicf(`ErrorGroup not struct, but: %s`, typ.Kind())
 	}
 	prefix := GetStandardName(typ.Name()) + manager.codeConnector
 	nameField, ok := typ.FieldByName(`Prefix`)
@@ -366,6 +366,12 @@ func InitErrGroup(group interface{}) {
 
 		if zerr.Code != `` {
 			continue
+		}
+		if zerr.HttpCode == -1 {
+			zerr.HttpCode = manager.defaultHttpCode
+		}
+		if zerr.LogLevel == 100 {
+			zerr.LogLevel = manager.defaultLogLevel
 		}
 		zerr.Code = fmt.Sprintf(`%s%s`, prefix, GetStandardName(tField.Name))
 	}
@@ -415,4 +421,6 @@ func (m *Manager) RegisterGroups(groups ...interface{}) {
 func unregister() {
 	registered = 0
 	manager.errGroups = nil
+	manager.defaultLogLevel = invalidLogLevel
+	manager.defaultHttpCode = invalidHttpCode
 }
