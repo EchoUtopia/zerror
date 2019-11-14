@@ -123,6 +123,9 @@ func (w *withMessage) Format(s fmt.State, verb rune) {
 }
 
 func DefaultDef(msg string) *Def {
+	if registered == 0 {
+		panic(`zerror manager not created`)
+	}
 	return &Def{
 		Code:        "",
 		HttpCode:    manager.defaultHttpCode,
@@ -258,7 +261,7 @@ func JSON(c *gin.Context, err error) {
 
 func (def *Def) JSON(c *gin.Context, err error) {
 	if registered == 0 {
-		panic(`groups not registered`)
+		panic(`zerror manager not created`)
 	}
 
 	httpCode := def.HttpCode
