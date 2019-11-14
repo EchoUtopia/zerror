@@ -88,12 +88,10 @@ type zerror struct {
 	def          *Def
 }
 
-
 type withMessage struct {
 	cause error
 	msg   string
 }
-
 
 func (ze *zerror) Cause() error { return ze.cause }
 func (ze *zerror) Error() string {
@@ -103,12 +101,9 @@ func (ze *zerror) Error() string {
 	return ze.def.Msg + ": " + ze.cause.Error()
 }
 
-
-
 func (ze *zerror) GetCaller() (string, string) {
 	return ze.callLocation, ze.callerName
 }
-
 
 func (w *withMessage) Error() string { return w.msg + ": " + w.cause.Error() }
 func (w *withMessage) Cause() error  { return w.cause }
@@ -127,7 +122,6 @@ func (w *withMessage) Format(s fmt.State, verb rune) {
 	}
 }
 
-
 func DefaultDef(msg string) *Def {
 	return &Def{
 		Code:        "",
@@ -137,7 +131,6 @@ func DefaultDef(msg string) *Def {
 		Description: "",
 	}
 }
-
 
 func (def *Def) SetCode(code string) *Def {
 	def.Code = code
@@ -193,7 +186,7 @@ func (def *Def) Wrap(err error) *zerror {
 	return def.wrap(err, 3)
 }
 
-func (def *Def)Wrapf(err error, format string, args ...interface{}) *zerror {
+func (def *Def) Wrapf(err error, format string, args ...interface{}) *zerror {
 	wErr := &withMessage{
 		cause: err,
 		msg:   fmt.Sprintf(format, args...),
@@ -206,7 +199,7 @@ func (def *Def) New(msg string) *zerror {
 	return def.wrap(err, 3)
 }
 
-func (def *Def)Errorf(format string, args ...interface{})*zerror {
+func (def *Def) Errorf(format string, args ...interface{}) *zerror {
 	err := errors.New(fmt.Sprintf(format, args...))
 	return def.wrap(err, 3)
 }
@@ -228,8 +221,7 @@ var InternalError = &Def{
 	Description: `this is server internal error, please contact admin`,
 }
 
-
-func (def *Def) Log(err error){
+func (def *Def) Log(err error) {
 	def.log(err, 2)
 }
 
@@ -264,7 +256,6 @@ func JSON(c *gin.Context, err error) {
 	manager.logger.WithFields(fields).WithError(zerr.cause).Log(def.LogLevel, def.Msg)
 }
 
-
 func (def *Def) JSON(c *gin.Context, err error) {
 	if registered == 0 {
 		panic(`groups not registered`)
@@ -276,8 +267,7 @@ func (def *Def) JSON(c *gin.Context, err error) {
 	def.log(err, 3)
 }
 
-
-func (def *Def)GetResponser() Responser {
+func (def *Def) GetResponser() Responser {
 	s := manager.responseFunc()
 	s.SetCode(def.Code)
 	if manager.RespondMessage {
@@ -286,7 +276,7 @@ func (def *Def)GetResponser() Responser {
 	return s
 }
 
-func (def *Def) log(err error, skip int){
+func (def *Def) log(err error, skip int) {
 
 	fields := logrus.Fields{}
 	l, n := getCaller(def, skip)
@@ -300,7 +290,7 @@ func (def *Def) log(err error, skip int){
 func getCaller(def *Def, skip int) (string, string) {
 	pc, file, line, ok := runtime.Caller(skip)
 	var callLocation, callerName string
-	if ok && (manager.debug && def.LogLevel == logrus.DebugLevel || def.Code == CodeInternal || def.Code == CodeUndefined) {
+	if ok && (manager.debugMode && def.LogLevel == logrus.DebugLevel || def.Code == CodeInternal || def.Code == CodeUndefined) {
 		callLocation = file + "/" + strconv.Itoa(line)
 	}
 	if ok {

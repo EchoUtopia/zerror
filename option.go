@@ -3,13 +3,14 @@ package zerror
 import "github.com/sirupsen/logrus"
 
 type Options struct {
-	wordConnector  string
-	codeConnector  string
-	RespondMessage bool
-	logger         logrus.FieldLogger
-	responseFunc   func() Responser
+	wordConnector   string
+	codeConnector   string
+	RespondMessage  bool
+	logger          logrus.FieldLogger
+	responseFunc    func() Responser
 	defaultHttpCode int
 	defaultLogLevel logrus.Level
+	debugMode       bool
 }
 
 type Option func(*Options)
@@ -44,14 +45,20 @@ func WithResponser(rf func() Responser) Option {
 	}
 }
 
-func DefaultHttpCode(hc int)Option{
+func DefaultHttpCode(hc int) Option {
 	return func(options *Options) {
 		options.defaultHttpCode = hc
 	}
 }
 
-func DefaultLogLevel(level logrus.Level)Option{
+func DefaultLogLevel(level logrus.Level) Option {
 	return func(options *Options) {
 		options.defaultLogLevel = level
+	}
+}
+
+func DebugMode(debug bool) Option {
+	return func(options *Options) {
+		options.debugMode = debug
 	}
 }
