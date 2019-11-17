@@ -225,7 +225,7 @@ var InternalError = &Def{
 }
 
 func (def *Def) Log(err error) {
-	def.log(err, 2)
+	def.log(err, 3)
 }
 
 //
