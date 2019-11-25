@@ -2,9 +2,9 @@ package main
 
 import (
 	"errors"
-	"github.com/EchoUtopia/zerror"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"gitlab.com/target-digital-transformation/kit/zerror"
 )
 
 var (
@@ -21,10 +21,10 @@ var (
 		Prefix: "auth",
 
 		// the code will be `auth:token`
-		Token: &zerror.Def{Code: ``, HttpCode: 401, Msg: `token invalid`, LogLevel: logrus.InfoLevel, Description: ``},
+		Token: zerror.DefaultDef(`invalid token`),
 
 		// if zerr code is not empty, then it's the final code
-		Expired: &zerror.Def{Code: `custom-expired`, HttpCode: 401, Msg: `token expired`, LogLevel: logrus.DebugLevel, Description: ``},
+		Expired: zerror.DefaultDef(`token expired`).SetCode(`custom-expired`),
 	}
 
 	SmsCode = &zerror.Def{Code: `sms:code`, HttpCode: 500, Msg: `sms code`, LogLevel: logrus.ErrorLevel, Description: ``}

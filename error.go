@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"io"
 	"reflect"
 	"runtime"
 	"strconv"
@@ -89,40 +88,23 @@ type zerror struct {
 	callerName   string
 	cause        error
 	def          *Def
-}
-
-type withMessage struct {
-	cause error
 	msg   string
 }
+
 
 func (ze *zerror) Cause() error { return ze.cause }
 func (ze *zerror) Error() string {
 	if ze.cause == nil {
 		return ze.def.Msg
 	}
-	return ze.def.Msg + ": " + ze.cause.Error()
+	if ze.msg == ``{
+		return ze.cause.Error()
+	}
+	return ze.msg + ": " + ze.cause.Error()
 }
 
 func (ze *zerror) GetCaller() (string, string) {
 	return ze.callLocation, ze.callerName
-}
-
-func (w *withMessage) Error() string { return w.msg + ": " + w.cause.Error() }
-func (w *withMessage) Cause() error  { return w.cause }
-
-func (w *withMessage) Format(s fmt.State, verb rune) {
-	switch verb {
-	case 'v':
-		if s.Flag('+') {
-			fmt.Fprintf(s, "%+v\n", w.Cause())
-			io.WriteString(s, w.msg)
-			return
-		}
-		fallthrough
-	case 's', 'q':
-		io.WriteString(s, w.Error())
-	}
 }
 
 func DefaultDef(msg string) *Def {
@@ -185,16 +167,18 @@ func (def *Def) wrap(err error, skip int) *zerror {
 	}
 }
 
+
 func (def *Def) Wrap(err error) *zerror {
 	return def.wrap(err, 3)
 }
 
 func (def *Def) Wrapf(err error, format string, args ...interface{}) *zerror {
-	wErr := &withMessage{
+	ze := &zerror{
 		cause: err,
 		msg:   fmt.Sprintf(format, args...),
+		def: def,
 	}
-	return def.wrap(wErr, 3)
+	return def.wrap(ze, 3)
 }
 
 func (def *Def) New(msg string) *zerror {
@@ -290,6 +274,14 @@ func (def *Def) log(err error, skip int) {
 	manager.logger.WithFields(fields).WithError(err).Log(def.LogLevel, def.Msg)
 }
 
+func (def *Def) Equal(err error) bool {
+	zerr, ok := err.(*zerror)
+	if ! ok {
+		return false
+	}
+	return zerr.def == def
+}
+
 func getCaller(def *Def, skip int) (string, string) {
 	pc, file, line, ok := runtime.Caller(skip)
 	var callLocation, callerName string
@@ -297,8 +289,8 @@ func getCaller(def *Def, skip int) (string, string) {
 		callLocation = file + "/" + strconv.Itoa(line)
 	}
 	if ok {
-		funcNameSplited := strings.Split(runtime.FuncForPC(pc).Name(), `.`)
-		callerName = funcNameSplited[len(funcNameSplited)-1]
+		funcName := runtime.FuncForPC(pc).Name()
+		callerName = funcName[strings.LastIndexByte(funcName, '.')+1:]
 	}
 	return callLocation, callerName
 }

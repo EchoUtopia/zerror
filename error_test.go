@@ -102,8 +102,13 @@ func ExampleNested() {
 	InitErrGroup(data)
 	ze := data.TestErr1.Wrap(data.Err.Wrap(errors.New(`original-error`)))
 	fmt.Println(ze.Error(), ze.callerName, ze.def.Code)
+
+
+	ze = data.TestErr1.Wrapf(data.Err.Wrap(errors.New(`original-error`)), `wrap message: %s`, `ad`)
+	fmt.Println(ze.Error(), ze.callerName, ze.def.Code)
 	// Output:
-	// msg1: msg2: original-error ExampleNested/ExampleNested test-err:test-err1
+	// original-error ExampleNested/ExampleNested test-err:test-err1
+	// wrap message: ad: original-error ExampleNested/ test-err:test-err1
 }
 
 type customeRsp struct {
@@ -169,8 +174,8 @@ func ExampleLog() {
 	errorf := def.Errorf(`%s`, `errorf`)
 	fmt.Println(errorf.callerName, errorf.Error(), errorf.def.Msg)
 	// Output:
-	// default: new
-	// ExampleLog default: errorf default
+	// new
+	// ExampleLog errorf default
 }
 
 type ForDefault struct {
@@ -190,4 +195,31 @@ func ExampleDefaultDef2() {
 	// Output:
 	// -1 unknown
 	// 500 error
+}
+
+func ExampleDef_Is() {
+
+	originalError := errors.New(`original error`)
+	def := DefaultDef(`default`)
+	def1 := DefaultDef(`default2`)
+	wrapped := def.Wrap(originalError)
+	wrapped1 := def1.Wrap(wrapped)
+	fmt.Println(def.Equal(wrapped))
+	fmt.Println(def1.Equal(wrapped1))
+	fmt.Println(def.Equal(wrapped1))
+	fmt.Println(def1.Equal(wrapped))
+	// Output:
+	// true
+	// true
+	// false
+	// false
+}
+
+func BenchmarkDef_Wrap(b *testing.B) {
+
+	originalError := errors.New(`original error`)
+	def := DefaultDef(`default`)
+	for i := 0;i < b.N;i ++ {
+		def.wrap(originalError, 1)
+	}
 }
