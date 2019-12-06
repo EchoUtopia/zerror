@@ -1,29 +1,18 @@
 package zerror
 
 import (
-	"encoding/json"
+	"context"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
-	"reflect"
 	"runtime"
 	"strconv"
 	"strings"
-	"sync/atomic"
 )
 
 const (
-	CodeUndefined = `zerror:undefined`
-	CodeInternal  = `zerror:internal`
+	BizCodeInternal = `zerror:internal`
 
-	invalidHttpCode = -1
-	invalidLogLevel = 100
-)
-
-var (
-	registered int32
-	manager    = &Manager{Options: Options{defaultHttpCode: invalidHttpCode, defaultLogLevel: invalidLogLevel}}
+	ExtLogLvl = `log_level`
 )
 
 // error can be used alone, like:
@@ -53,239 +42,203 @@ var (
 type Def struct {
 	// error code,
 	Code        string       `json:"code"`
-	HttpCode    int          `json:"http_code"`
 	Msg         string       `json:"-"`
-	LogLevel    logrus.Level `json:"-"`
 	Description string       `json:"description"`
+	PCode       ProtocolCode `json:"protocol_code"`
+
+	// extended fields
+	Extensions map[string]interface{} `json:"extensions"`
 }
 
-type Manager struct {
-	Options
-	errGroups []interface{}
+type Data map[string]interface{}
+
+type ZContext struct {
+	CallLocation string
+	CallerName   string
+	Data         Data
+	Ctx          context.Context
 }
 
-type Responser interface {
-	SetCode(code string)
-	SetMessage(msg string)
-}
-
-type StdResponse struct {
-	Code string      `json:"code"`
-	Data interface{} `json:"data"`
-	Msg  *string     `json:"msg"`
-}
-
-func (r *StdResponse) SetCode(code string) {
-	r.Code = code
-}
-
-func (r *StdResponse) SetMessage(msg string) {
-	r.Msg = &msg
-}
-
-type zerror struct {
-	callLocation string
-	callerName   string
-	cause        error
-	def          *Def
+type Error struct {
+	cause error
+	Def   *Def
 	msg   string
+	*ZContext
 }
 
-
-func (ze *zerror) Cause() error { return ze.cause }
-func (ze *zerror) Error() string {
-	if ze.cause == nil {
-		return ze.def.Msg
+func NewError(cause error, def *Def, msg string, ctx *ZContext) *Error {
+	return &Error{
+		cause:    cause,
+		Def:      def,
+		msg:      msg,
+		ZContext: ctx,
 	}
-	if ze.msg == ``{
-		return ze.cause.Error()
-	}
-	return ze.msg + ": " + ze.cause.Error()
 }
 
-func (ze *zerror) GetCaller() (string, string) {
-	return ze.callLocation, ze.callerName
+func (ze *Error) Cause() error { return ze.cause }
+func (ze *Error) Error() string {
+	msg := ze.Def.Msg
+
+	if ze.msg != `` {
+		msg += `: ` + ze.msg
+	}
+
+	if ze.cause != nil {
+		msg += ` <- ` + ze.cause.Error()
+	}
+
+	return msg
+}
+
+func (ze *Error) WithData(kvs ...*kv) *Error {
+	if ze.Data == nil {
+		ze.Data = make(Data, len(kvs)+2)
+	}
+	for _, v := range kvs {
+		ze.Data[v.K] = v.V
+	}
+	return ze
+}
+
+type kv struct {
+	K string
+	V interface{}
+}
+
+func KV(k string, v interface{}) *kv {
+	return &kv{
+		K: k,
+		V: v,
+	}
+}
+
+func (ze *Error) WithContext(ctx context.Context) *Error {
+	ze.Ctx = ctx
+	return ze
+}
+
+func (ze *Error) GetCaller() (string, string) {
+	return ze.CallLocation, ze.CallerName
 }
 
 func DefaultDef(msg string) *Def {
 	return &Def{
 		Code:        "",
-		HttpCode:    manager.defaultHttpCode,
+		PCode:       manager.defaultPCode,
 		Msg:         msg,
-		LogLevel:    manager.defaultLogLevel,
 		Description: "",
 	}
 }
 
-func (def *Def) SetCode(code string) *Def {
+func (def *Def) WithCode(code string) *Def {
 	def.Code = code
 	return def
 }
 
-func (def *Def) SetHttpCode(code int) *Def {
-	def.HttpCode = code
+func (def *Def) WithPCode(pCode ProtocolCode) *Def {
+	def.PCode = pCode
 	return def
 }
 
-func (def *Def) SetMsg(msg string) *Def {
+func (def *Def) WithMsg(msg string) *Def {
 	def.Msg = msg
 	return def
 }
 
-func (def *Def) SetLogLevel(level logrus.Level) *Def {
-	def.LogLevel = level
+func (def *Def) Extend(k string, v interface{}) *Def {
+	if def.Extensions == nil {
+		def.Extensions = make(map[string]interface{})
+	}
+	def.Extensions[k] = v
 	return def
 }
 
-func (def *Def) SetDesc(desc string) *Def {
+func (def *Def) WithDesc(desc string) *Def {
 	def.Description = desc
 	return def
 }
 
-func (def *Def) wrap(err error, skip int) *zerror {
+func (def *Def) wrapf(err error, skip int, format string, args ...interface{}) *Error {
 
-	l, n := getCaller(def, skip)
-	org, ok := err.(*zerror)
+	l, n := GetCaller(def, skip)
+	org, ok := err.(*Error)
+	var zerr *Error
 	if ok {
-		zerr := &zerror{
-			callLocation: org.callLocation,
-			callerName:   n + `/` + org.callerName,
-			cause:        org,
-			def:          def,
+		zerr = &Error{
+			ZContext: &ZContext{
+				CallLocation: org.CallLocation,
+				CallerName:   n + `/` + org.CallerName,
+			},
+			cause: org,
+			Def:   def,
 		}
 		// if the original error is internal ,then the final error is internal
-		if org.def.Code == CodeInternal {
-			zerr.def = org.def
+		if org.Def.Code == BizCodeInternal {
+			zerr.Def = org.Def
 		}
 		return zerr
+	} else {
+		zerr = &Error{
+			ZContext: &ZContext{
+				CallLocation: l,
+				CallerName:   n,
+			},
+			cause: err,
+			Def:   def,
+		}
 	}
-	return &zerror{
-		callLocation: l,
-		callerName:   n,
-		cause:        err,
-		def:          def,
+	if format != `` {
+		zerr.msg = fmt.Sprintf(format, args...)
 	}
+	return zerr
 }
 
-
-func (def *Def) Wrap(err error) *zerror {
-	return def.wrap(err, 3)
+func (def *Def) Wrap(err error) *Error {
+	return def.wrapf(err, 3, ``)
 }
 
-func (def *Def) Wrapf(err error, format string, args ...interface{}) *zerror {
-	ze := &zerror{
-		cause: err,
-		msg:   fmt.Sprintf(format, args...),
-		def: def,
-	}
-	return def.wrap(ze, 3)
+func (def *Def) Wrapf(err error, format string, args ...interface{}) *Error {
+	return def.wrapf(err, 3, format, args...)
 }
 
-func (def *Def) New(msg string) *zerror {
+func (def *Def) New(msg string) *Error {
 	err := errors.New(msg)
-	return def.wrap(err, 3)
+	return def.wrapf(err, 3, ``)
 }
 
-func (def *Def) Errorf(format string, args ...interface{}) *zerror {
+func (def *Def) Errorf(format string, args ...interface{}) *Error {
 	err := errors.New(fmt.Sprintf(format, args...))
-	return def.wrap(err, 3)
-}
-
-// if err is not zerr.Def, then this err will be used
-var UndefinedError = &Def{
-	Code:        CodeUndefined,
-	HttpCode:    500,
-	Msg:         "unkown error",
-	LogLevel:    logrus.ErrorLevel,
-	Description: "error not defined, please contact admin",
+	return def.wrapf(err, 3, ``)
 }
 
 var InternalError = &Def{
-	Code:        CodeInternal,
-	HttpCode:    500,
+	Code:        BizCodeInternal,
+	PCode:       CodeInternal,
 	Msg:         `internal error`,
-	LogLevel:    logrus.ErrorLevel,
 	Description: `this is server internal error, please contact admin`,
 }
 
-func (def *Def) Log(err error) {
-	def.log(err, 3)
-}
-
-//
-func JSON(c *gin.Context, err error) {
-	if registered == 0 {
-		panic(`groups not registered`)
-	}
-	var def *Def
-	zerr, ok := err.(*zerror)
-	if !ok {
-		def = UndefinedError
-		zerr = &zerror{
-			callLocation: "",
-			callerName:   "",
-			cause:        err,
-			def:          def,
-		}
-		zerr.callLocation, zerr.callerName = getCaller(def, 2)
-	} else {
-		def = zerr.def
-	}
-
-	c.JSON(def.HttpCode, def.GetResponser())
-	c.Abort()
-	l, n := zerr.GetCaller()
-	fields := logrus.Fields{`caller`: n}
-	if l != `` {
-		fields[`call_location`] = l
-	}
-
-	manager.logger.WithFields(fields).WithError(zerr.cause).Log(def.LogLevel, def.Msg)
-}
-
-func (def *Def) JSON(c *gin.Context, err error) {
-	if registered == 0 {
-		panic(`zerror manager not created`)
-	}
-
-	httpCode := def.HttpCode
-	c.JSON(httpCode, def.GetResponser())
-	c.Abort()
-	def.log(err, 3)
-}
-
-func (def *Def) GetResponser() Responser {
+func (def *Def) GetResponser(err error) Responser {
 	s := manager.responseFunc()
 	s.SetCode(def.Code)
-	if manager.RespondMessage {
-		s.SetMessage(def.Description)
+	if manager.RespondMessage || manager.debugMode {
+		s.SetMessage(err.Error())
 	}
 	return s
 }
 
-func (def *Def) log(err error, skip int) {
-
-	fields := logrus.Fields{}
-	l, n := getCaller(def, skip)
-	fields[`caller`] = n
-	if l != `` {
-		fields[`call_location`] = l
-	}
-	manager.logger.WithFields(fields).WithError(err).Log(def.LogLevel, def.Msg)
-}
-
 func (def *Def) Equal(err error) bool {
-	zerr, ok := err.(*zerror)
-	if ! ok {
+	zerr, ok := err.(*Error)
+	if !ok {
 		return false
 	}
-	return zerr.def == def
+	return zerr.Def == def
 }
 
-func getCaller(def *Def, skip int) (string, string) {
+func GetCaller(def *Def, skip int) (string, string) {
 	pc, file, line, ok := runtime.Caller(skip)
 	var callLocation, callerName string
-	if ok && (manager.debugMode && def.LogLevel == logrus.DebugLevel || def.Code == CodeInternal || def.Code == CodeUndefined) {
+	if ok && (manager.debugMode || def.Code == BizCodeInternal) {
 		callLocation = file + "/" + strconv.Itoa(line)
 	}
 	if ok {
@@ -312,107 +265,17 @@ func GetStandardName(name string) string {
 	return lowered
 }
 
-// the parameters must be error group ptr,
-// if error group has field `Prefix`, then it's values will be used as error code prefix,
-// else the group Type Name (after standardized) will be used as prefix,
-// the prefix and the suberrorcode will be joined by ':'
+func Cause(err error) error {
+	type causer interface {
+		Cause() error
+	}
 
-func InitErrGroup(group interface{}) {
-	typ := reflect.TypeOf(group)
-	val := reflect.ValueOf(group)
-	if typ.Kind() != reflect.Ptr {
-		logrus.Panicf(`moduleErr is not ptr but: %s`, typ.Kind())
-	}
-	typ = typ.Elem()
-	val = val.Elem()
-	if typ.Kind() != reflect.Struct {
-		logrus.Panicf(`ErrorGroup not struct, but: %s`, typ.Kind())
-	}
-	prefix := GetStandardName(typ.Name()) + manager.codeConnector
-	nameField, ok := typ.FieldByName(`Prefix`)
-	if ok {
-		if nameField.Type.Kind() != reflect.String {
-			logrus.Panicf(`Name field not string type`)
+	for err != nil {
+		cause, ok := err.(causer)
+		if !ok {
+			break
 		}
-		nameVal := val.FieldByName(`Prefix`).Interface().(string)
-		if nameVal == `` {
-			prefix = ``
-		} else {
-			prefix = nameVal + manager.codeConnector
-		}
+		err = cause.Cause()
 	}
-	var zerr *Def
-	for i := 0; i < typ.NumField(); i++ {
-		tField := typ.Field(i)
-		structField := val.Field(i)
-		if !structField.CanSet() {
-			continue
-		}
-		if tField.Type != reflect.TypeOf(zerr) {
-			continue
-		}
-		if structField.IsNil() {
-			logrus.Panicf(`%s is nil`, tField.Name)
-		}
-		zerr = structField.Interface().(*Def)
-
-		if zerr.Code != `` {
-			continue
-		}
-		if zerr.HttpCode == -1 {
-			zerr.HttpCode = manager.defaultHttpCode
-		}
-		if zerr.LogLevel == 100 {
-			zerr.LogLevel = manager.defaultLogLevel
-		}
-		zerr.Code = fmt.Sprintf(`%s%s`, prefix, GetStandardName(tField.Name))
-	}
-}
-
-func JsonDumpGroups(ident string) string {
-	mared, err := json.MarshalIndent(manager.errGroups, ``, ident)
-	if err != nil {
-		panic(err)
-	}
-	return string(mared)
-}
-
-func New(options ...Option) *Manager {
-	do := &Options{
-		wordConnector:  `-`,
-		codeConnector:  `:`,
-		RespondMessage: true,
-		logger:         logrus.StandardLogger(),
-		responseFunc: func() Responser {
-			return new(StdResponse)
-		},
-		defaultLogLevel: logrus.ErrorLevel,
-		defaultHttpCode: 400,
-	}
-	for _, setter := range options {
-		setter(do)
-	}
-	m := &Manager{
-		Options: *do,
-	}
-	manager = m
-	return m
-}
-
-func (m *Manager) RegisterGroups(groups ...interface{}) {
-	if !atomic.CompareAndSwapInt32(&registered, 0, 1) {
-		panic(`groups registered twice`)
-	}
-	for _, v := range groups {
-		InitErrGroup(v)
-		m.errGroups = append(m.errGroups, v)
-	}
-}
-
-// for test
-func unregister() {
-	registered = 0
-	manager.errGroups = nil
-	manager.defaultLogLevel = invalidLogLevel
-	manager.defaultHttpCode = invalidHttpCode
+	return err
 }

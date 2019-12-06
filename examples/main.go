@@ -2,21 +2,23 @@ package main
 
 import (
 	"errors"
+	"github.com/EchoUtopia/zerror"
+	gin_ze "github.com/EchoUtopia/zerror/gin"
+	"github.com/EchoUtopia/zerror/logrus"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"gitlab.com/target-digital-transformation/kit/zerror"
 )
 
 var (
-	Common = &CommonErr{
+	Common = &CommonGroup{
 		// if prefix is empty, there's no prefix in code
 		Prefix: "",
 
 		// the code will be `args`
-		Args: &zerror.Def{Code: ``, HttpCode: 400, Msg: `args err`, LogLevel: logrus.DebugLevel, Description: ``},
+		Args: (&zerror.Def{Code: ``, PCode: 400, Msg: `args err`, Description: ``}).Extend(zerror.ExtLogLvl, logrus.DebugLevel),
 	}
 
-	Auth = &AuthErr{
+	Auth = &AuthGroup{
 		// prefix in code, seperated by ':"
 		Prefix: "auth",
 
@@ -24,19 +26,19 @@ var (
 		Token: zerror.DefaultDef(`invalid token`),
 
 		// if zerr code is not empty, then it's the final code
-		Expired: zerror.DefaultDef(`token expired`).SetCode(`custom-expired`),
+		Expired: zerror.DefaultDef(`token expired`).WithCode(`custom-expired`),
 	}
 
-	SmsCode = &zerror.Def{Code: `sms:code`, HttpCode: 500, Msg: `sms code`, LogLevel: logrus.ErrorLevel, Description: ``}
+	SmsCode = &zerror.Def{Code: `sms:code`, PCode: 500, Msg: `sms code`, Description: ``}
 )
 
 // this is error group
-type CommonErr struct {
+type CommonGroup struct {
 	Prefix string
 	Args   *zerror.Def
 }
 
-type AuthErr struct {
+type AuthGroup struct {
 	Prefix  string
 	Token   *zerror.Def
 	Expired *zerror.Def
@@ -50,25 +52,25 @@ func ErrHandler(c *gin.Context) {
 	errType := c.Query(`type`)
 	switch errType {
 	case `original`:
-		zerror.JSON(c, originalErr)
+		gin_ze.JSON(c, originalErr)
 	case `internal`:
 		err = zerror.InternalError.Wrap(err)
-		zerror.JSON(c, err)
+		gin_ze.JSON(c, err)
 	case `straight`:
-		SmsCode.JSON(c, originalErr)
+		err = SmsCode.Wrap(originalErr)
+		gin_ze.JSON(c, err)
 	case `undefined`:
-		zerror.JSON(c, originalErr)
+		gin_ze.JSON(c, originalErr)
 	default:
-		zerror.JSON(c, err)
+		gin_ze.JSON(c, err)
 	}
 }
 
 func main() {
 
-	logger := logrus.StandardLogger()
+	logrus_ze.Logger = logrus.StandardLogger()
 	logrus.SetLevel(logrus.DebugLevel)
 	manager := zerror.New(
-		zerror.Logger(logger),
 		zerror.RespondMessage(false),
 	)
 
