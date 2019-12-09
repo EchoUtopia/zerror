@@ -2,4 +2,7 @@ module github.com/EchoUtopia/zerror/logrus
 
 go 1.13
 
-require github.com/sirupsen/logrus v1.4.2
+require (
+	github.com/EchoUtopia/zerror v0.0.2
+	github.com/sirupsen/logrus v1.4.2
+)

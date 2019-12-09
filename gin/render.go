@@ -6,6 +6,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	LogWhenRespond = `log_when_respond`
+)
+
 func JSON(c *gin.Context, err error) {
 	if !zerror.Registered() {
 		panic(`groups not registered`)
@@ -14,7 +18,7 @@ func JSON(c *gin.Context, err error) {
 	zerr, ok := err.(*zerror.Error)
 	if !ok {
 		def = zerror.InternalError
-		location, caller := zerror.GetCaller(def, 2)
+		location, caller := zerror.GetCaller(def, 3)
 		zerr = zerror.NewError(err, def, ``, &zerror.ZContext{CallLocation: location, CallerName: caller})
 	} else {
 		def = zerr.Def
@@ -22,5 +26,7 @@ func JSON(c *gin.Context, err error) {
 
 	c.JSON(int(def.PCode), def.GetResponser(zerr))
 	c.Abort()
-	logrus_ze.Log(c.Request.Context(), def, err)
+	if _, logWhenRespond := zerror.Manager.GetExtension(LogWhenRespond); logWhenRespond {
+		logrus_ze.LogCtx(c.Request.Context(), zerr)
+	}
 }

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"github.com/EchoUtopia/zerror"
 	gin_ze "github.com/EchoUtopia/zerror/gin"
-	"github.com/EchoUtopia/zerror/logrus"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
@@ -44,60 +43,45 @@ type AuthGroup struct {
 	Expired *zerror.Def
 }
 
-func ErrHandler(c *gin.Context) {
+func HandleOriginal(c *gin.Context) {
 	originalErr := errors.New(`original error`)
+	gin_ze.JSON(c, originalErr)
+}
 
-	err := Common.Args.Wrap(originalErr)
+func HandleInternal(c *gin.Context) {
+	originalErr := errors.New(`original error`)
+	err := zerror.InternalError.Wrap(originalErr)
+	err = Common.Args.Wrap(err)
+	gin_ze.JSON(c, err)
+}
 
-	errType := c.Query(`type`)
-	switch errType {
-	case `original`:
-		gin_ze.JSON(c, originalErr)
-	case `internal`:
-		err = zerror.InternalError.Wrap(err)
-		gin_ze.JSON(c, err)
-	case `straight`:
-		err = SmsCode.Wrap(originalErr)
-		gin_ze.JSON(c, err)
-	case `undefined`:
-		gin_ze.JSON(c, originalErr)
-	default:
-		gin_ze.JSON(c, err)
-	}
+func HandleDefault(c *gin.Context) {
+
+	originalErr := errors.New(`original error`)
+	err := Common.Args.Wrap(originalErr).WithData(zerror.KV(`custom key`, `custom value`))
+	gin_ze.JSON(c, err)
 }
 
 func main() {
 
-	logrus_ze.Logger = logrus.StandardLogger()
 	logrus.SetLevel(logrus.DebugLevel)
 	manager := zerror.New(
-		zerror.RespondMessage(false),
+		// zerror.DebugMode(true),
+		// zerror.WithResponser(),
+		// zerror.DefaultPCode(zerror.CodeBadRequest),
+		zerror.RespondMessage(true),
+		zerror.Extend(zerror.ExtLogLvl, logrus.StandardLogger()),
+		zerror.Extend(gin_ze.LogWhenRespond, true),
 	)
 
 	// error group must be registered
 	manager.RegisterGroups(Common, Auth)
 
 	r := gin.Default()
-	r.GET(`/error`, ErrHandler)
+	r.GET(`/error`, HandleDefault)
+	r.GET(`/error/original`, HandleOriginal)
+	r.GET(`/error/internal`, HandleInternal)
 	r.Run(`:8989`)
 
-	// when access /error, response is : `{"code":"args","data":null}`, http code is 400
-	// log is :
-	// DEBU[0010] args err                                      call_location=/Users/echo/go/src/github.com/EchoUtopia/zerror/examples/main.go/56 caller=ErrHandler error="original error"
-
-	// when access /error?type=original, response is : `{"code":"unkown","data":null}`, http code is 500
-	// log is :
-	// ERRO[0001] unkown error                                  caller=ErrHandler error="original error"
-
-	// when access /error?type=internal, response is `{"code":"zerror:internal","data":null}`, http code is 500
-	// log is :
-	// ERRO[0002] internal error                                call_location=/Users/echo/go/src/github.com/EchoUtopia/zerror/examples/main.go/48 caller=ErrHandler/ErrHandler error="args err: original error"
-
-	// when access /error?type=straight, response is `{"code":"sms:code","data":null}`, http code is 500
-	// log is :
-	// ERRO[0064] sms code                                      caller=ErrHandler error="original error"
-
-	// when access /error?type=undefined, response is `{"code":"zerror:undefined","data":null}`, http code is 500
-	// log is :
-	// ERRO[0006] unkown error                                  caller=ErrHandler error="original error"
+	// just go to see the http response and the logs in server sever side
 }

@@ -11,11 +11,11 @@ import (
 
 var (
 	registered int32
-	manager    = &Manager{Options: Options{defaultPCode: CodeInvalid}}
+	Manager    = &zmanager{Options: &Options{defaultPCode: CodeInvalid}}
 )
 
-type Manager struct {
-	Options
+type zmanager struct {
+	*Options
 	errGroups []interface{}
 }
 
@@ -37,23 +37,20 @@ func InitErrGroup(group interface{}) {
 	}
 
 	groupName := typ.Name()
-	if !strings.HasSuffix(typ.Name(), `Group`) {
+	if !strings.HasSuffix(typ.Name(), `Group`) || len(groupName) <= 5 {
 		log.Panicf(`error group type: %s must has suffix Group`, groupName)
 	}
-	prefix := GetStandardName(typ.Name()) + manager.codeConnector
+	prefix := GetStandardName(groupName[:len(groupName)-5]) + Manager.codeConnector
 	nameField, ok := typ.FieldByName(`Prefix`)
 	if ok {
 		if nameField.Type.Kind() != reflect.String {
 			log.Panicf(`error group: %s, Prefix field not string type, but: %s`, groupName, nameField.Type.Kind())
 		}
-		_, prefixSet := typ.FieldByName(`Prefix`)
 		nameVal := val.FieldByName(`Prefix`).Interface().(string)
-		if prefixSet {
-			prefix = strings.ToLower(groupName[:len(groupName)-5]) + manager.codeConnector
-		} else if nameVal == `` {
+		if nameVal == `` {
 			prefix = ``
 		} else {
-			prefix = nameVal + manager.codeConnector
+			prefix = nameVal + Manager.codeConnector
 		}
 	}
 	var zerr *Def
@@ -75,21 +72,21 @@ func InitErrGroup(group interface{}) {
 			continue
 		}
 		if zerr.PCode == -1 {
-			zerr.PCode = manager.defaultPCode
+			zerr.PCode = Manager.defaultPCode
 		}
 		zerr.Code = fmt.Sprintf(`%s%s`, prefix, GetStandardName(tField.Name))
 	}
 }
 
 func JsonDumpGroups(ident string) string {
-	mared, err := json.MarshalIndent(manager.errGroups, ``, ident)
+	mared, err := json.MarshalIndent(Manager.errGroups, ``, ident)
 	if err != nil {
 		panic(err)
 	}
 	return string(mared)
 }
 
-func New(options ...Option) *Manager {
+func New(options ...Option) *zmanager {
 	do := &Options{
 		wordConnector:  `-`,
 		codeConnector:  `:`,
@@ -102,14 +99,14 @@ func New(options ...Option) *Manager {
 	for _, setter := range options {
 		setter(do)
 	}
-	m := &Manager{
-		Options: *do,
+	m := &zmanager{
+		Options: do,
 	}
-	manager = m
+	Manager = m
 	return m
 }
 
-func (m *Manager) RegisterGroups(groups ...interface{}) {
+func (m *zmanager) RegisterGroups(groups ...interface{}) {
 	if !atomic.CompareAndSwapInt32(&registered, 0, 1) {
 		panic(`groups registered twice`)
 	}
@@ -122,8 +119,8 @@ func (m *Manager) RegisterGroups(groups ...interface{}) {
 // for test
 func unregister() {
 	registered = 0
-	manager.errGroups = nil
-	manager.defaultPCode = CodeInvalid
+	Manager.errGroups = nil
+	Manager.defaultPCode = CodeInvalid
 }
 
 func Registered() bool {

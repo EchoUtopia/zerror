@@ -4,22 +4,18 @@ import (
 	"context"
 	"github.com/EchoUtopia/zerror"
 	"github.com/sirupsen/logrus"
+	"log"
 )
 
 var (
-	Logger                 logrus.FieldLogger
 	ExtractDataFromCtxFunc ExtractDataFromCtx
 )
 
 type ExtractDataFromCtx func(context.Context) zerror.Data
 
-func Log(ctx context.Context, def *zerror.Def, err error) {
+func LogCtx(ctx context.Context, err error) {
 	data := zerror.Data{}
-	l, n := zerror.GetCaller(def, 2)
-	data[`caller`] = n
-	if l != `` {
-		data[`call_location`] = l
-	}
+
 	logLevel := logrus.ErrorLevel
 	zerr, ok := err.(*zerror.Error)
 	if ok {
@@ -30,11 +26,57 @@ func Log(ctx context.Context, def *zerror.Def, err error) {
 		if ok {
 			logLevel = li.(logrus.Level)
 		}
+		data = zerr.Data
+	} else {
+		l, n := zerror.GetCaller(nil, 2)
+		data[`caller`] = n
+		if l != `` {
+			data[`call_location`] = l
+		}
 	}
 	if ExtractDataFromCtxFunc != nil {
 		for k, v := range ExtractDataFromCtxFunc(ctx) {
 			data[k] = v
 		}
 	}
-	Logger.WithFields(logrus.Fields(data)).WithError(err).Log(logLevel, def.Msg)
+	getAndLog(err, data, logLevel)
+}
+
+func Log(err error) {
+	data := zerror.Data{}
+	logLevel := logrus.ErrorLevel
+	zerr, ok := err.(*zerror.Error)
+	if ok {
+		for k, v := range zerr.Data {
+			data[k] = v
+		}
+		li, ok := zerr.Def.Extensions[zerror.ExtLogLvl]
+		if ok {
+			logLevel = li.(logrus.Level)
+		}
+		data = zerr.Data
+	} else {
+		l, n := zerror.GetCaller(nil, 2)
+		data[`caller`] = n
+		if l != `` {
+			data[`call_location`] = l
+		}
+	}
+	getAndLog(err, data, logLevel)
+}
+
+func getAndLog(err error, data zerror.Data, level logrus.Level) {
+
+	iLogger, ok := zerror.Manager.GetExtension(zerror.ExtLogLvl)
+	logger, isLogger := iLogger.(logrus.FieldLogger)
+	if zerror.Manager.DebugMode() {
+		if !ok || !isLogger {
+			log.Panicf(`manager extension: %s not exist or is not logrus.FieldLogger`, zerror.ExtLogLvl)
+		}
+	} else if !ok || !isLogger {
+		log.Printf(`manager extension: %s not exist or is not logrus.FieldLogger`, zerror.ExtLogLvl)
+		log.Printf(`data: %v, err: %s`, data, err)
+		return
+	}
+	logger.WithFields(logrus.Fields(data)).WithError(err).Log(level)
 }

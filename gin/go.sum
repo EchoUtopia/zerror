@@ -1,5 +1,7 @@
 github.com/EchoUtopia/zerror v0.0.1 h1:/g3IM9BiJ9v5/K7yZngYRb21qcYu3Py8DkZ2ZpgG6A8=
 github.com/EchoUtopia/zerror v0.0.1/go.mod h1:kt/7dIZjnxPZSaOI3nODVS5VqvTzS42LSS/1LRuT7b4=
+github.com/EchoUtopia/zerror/logrus v0.0.0-20191206023101-0f9f647090b5 h1:MqT+uESK6arkZvyuaQiOt1mCKTcQoc8OqYNN3vfPF4s=
+github.com/EchoUtopia/zerror/logrus v0.0.0-20191206023101-0f9f647090b5/go.mod h1:YEDCjBk8CAMIKcyLxa+lgQeZmTlG+rKMthI+5eleW/c=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

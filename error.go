@@ -59,6 +59,14 @@ type ZContext struct {
 	Ctx          context.Context
 }
 
+func (ctx *ZContext) Merge(m *ZContext) {
+	ctx.CallLocation = m.CallLocation
+	ctx.CallerName += `/` + m.CallerName
+	for k, v := range m.Data {
+		ctx.Data[k] = v
+	}
+}
+
 type Error struct {
 	cause error
 	Def   *Def
@@ -124,7 +132,7 @@ func (ze *Error) GetCaller() (string, string) {
 func DefaultDef(msg string) *Def {
 	return &Def{
 		Code:        "",
-		PCode:       manager.defaultPCode,
+		PCode:       Manager.defaultPCode,
 		Msg:         msg,
 		Description: "",
 	}
@@ -165,16 +173,15 @@ func (def *Def) wrapf(err error, skip int, format string, args ...interface{}) *
 	var zerr *Error
 	if ok {
 		zerr = &Error{
-			ZContext: &ZContext{
-				CallLocation: org.CallLocation,
-				CallerName:   n + `/` + org.CallerName,
-			},
-			cause: org,
-			Def:   def,
+			ZContext: org.ZContext,
+			cause:    org,
+			Def:      def,
 		}
+		zerr.CallerName += `/` + n
 		// if the original error is internal ,then the final error is internal
 		if org.Def.Code == BizCodeInternal {
 			zerr.Def = org.Def
+			zerr.cause = org.cause
 		}
 		return zerr
 	} else {
@@ -219,9 +226,9 @@ var InternalError = &Def{
 }
 
 func (def *Def) GetResponser(err error) Responser {
-	s := manager.responseFunc()
+	s := Manager.responseFunc()
 	s.SetCode(def.Code)
-	if manager.RespondMessage || manager.debugMode {
+	if Manager.RespondMessage || Manager.debugMode {
 		s.SetMessage(err.Error())
 	}
 	return s
@@ -238,7 +245,7 @@ func (def *Def) Equal(err error) bool {
 func GetCaller(def *Def, skip int) (string, string) {
 	pc, file, line, ok := runtime.Caller(skip)
 	var callLocation, callerName string
-	if ok && (manager.debugMode || def.Code == BizCodeInternal) {
+	if ok && (Manager.debugMode || def == nil || def.Code == BizCodeInternal) {
 		callLocation = file + "/" + strconv.Itoa(line)
 	}
 	if ok {
@@ -254,7 +261,7 @@ func GetStandardName(name string) string {
 	lastLower := true
 	for k, v := range name {
 		if v >= 'A' && v <= 'Z' && k != 0 && lastLower {
-			out += manager.wordConnector
+			out += Manager.wordConnector
 			lastLower = false
 		} else {
 			lastLower = true
