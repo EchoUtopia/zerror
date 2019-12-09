@@ -18,26 +18,25 @@ func LogCtx(ctx context.Context, err error) {
 
 	logLevel := logrus.ErrorLevel
 	zerr, ok := err.(*zerror.Error)
+	l, n := ``, ``
 	if ok {
-		for k, v := range zerr.Data {
-			data[k] = v
-		}
+		l, n = zerr.GetCaller()
 		li, ok := zerr.Def.Extensions[zerror.ExtLogLvl]
 		if ok {
 			logLevel = li.(logrus.Level)
 		}
 		data = zerr.Data
 	} else {
-		l, n := zerror.GetCaller(nil, 2)
-		data[`caller`] = n
-		if l != `` {
-			data[`call_location`] = l
-		}
+		l, n = zerror.GetCaller(nil, 2)
 	}
 	if ExtractDataFromCtxFunc != nil {
 		for k, v := range ExtractDataFromCtxFunc(ctx) {
 			data[k] = v
 		}
+	}
+	data[`caller`] = n
+	if l != `` {
+		data[`call_location`] = l
 	}
 	getAndLog(err, data, logLevel)
 }
@@ -45,22 +44,22 @@ func LogCtx(ctx context.Context, err error) {
 func Log(err error) {
 	data := zerror.Data{}
 	logLevel := logrus.ErrorLevel
+	l, n := ``, ``
 	zerr, ok := err.(*zerror.Error)
 	if ok {
-		for k, v := range zerr.Data {
-			data[k] = v
-		}
+		l, n = zerr.GetCaller()
+		data = zerr.Data
 		li, ok := zerr.Def.Extensions[zerror.ExtLogLvl]
 		if ok {
 			logLevel = li.(logrus.Level)
 		}
 		data = zerr.Data
 	} else {
-		l, n := zerror.GetCaller(nil, 2)
-		data[`caller`] = n
-		if l != `` {
-			data[`call_location`] = l
-		}
+		l, n = zerror.GetCaller(nil, 2)
+	}
+	data[`caller`] = n
+	if l != `` {
+		data[`call_location`] = l
 	}
 	getAndLog(err, data, logLevel)
 }

@@ -2,7 +2,7 @@ package gin_ze
 
 import (
 	"github.com/EchoUtopia/zerror"
-	"github.com/EchoUtopia/zerror/logrus"
+	logrus_ze "github.com/EchoUtopia/zerror/logrus"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,7 +18,7 @@ func JSON(c *gin.Context, err error) {
 	zerr, ok := err.(*zerror.Error)
 	if !ok {
 		def = zerror.InternalError
-		location, caller := zerror.GetCaller(def, 3)
+		location, caller := zerror.GetCaller(def, 2)
 		zerr = zerror.NewError(err, def, ``, &zerror.ZContext{CallLocation: location, CallerName: caller})
 	} else {
 		def = zerr.Def

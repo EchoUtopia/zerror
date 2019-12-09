@@ -15,30 +15,6 @@ const (
 	ExtLogLvl = `log_level`
 )
 
-// error can be used alone, like:
-// var SmsCode = &zerror.Def{`sms:code`, 500, `sms code`, logrus.ErrorLevel, ``}
-// then you can use it to respond and log error:
-// SmsCode.JSON(ginContext, error)
-
-// it's better to use error group, error group classfy errors into different groups:
-// 	Common = &CommonErr{
-//		Prefix:   "",
-//		Args:     &zerror.Def{``, 400, `args err`, logrus.DebugLevel, ``},
-//		Internal: &zerror.Def{``, 500, `internal err`, logrus.ErrorLevel, ``},
-//	}
-
-// then you can use it to repond and log error:
-// Common.Args.JSON(c, errors.Wrap(err, `msg`))
-
-// the error code will be automaticlly generated if you use error group, the name will be standardized
-// if there's a 'Prefix' field in Group, then it's value will be used as error code prefix,
-// else the group type name will be used,
-// but if the value is empty, then there's no prefix in error code
-// take 'Common' group above as example:
-// the Common.Args's code will be `args`, because the Prefix's values is ''
-// if CommonErr has no Prefix field, then the Common.Args's error code will be 'common-err:args'
-// if the Prefix field's values is 'common', the the Common.Args's error code will be 'common:args'
-
 type Def struct {
 	// error code,
 	Code        string       `json:"code"`
@@ -75,6 +51,12 @@ type Error struct {
 }
 
 func NewError(cause error, def *Def, msg string, ctx *ZContext) *Error {
+	if ctx == nil {
+		ctx = new(ZContext)
+	}
+	if ctx.Data == nil {
+		ctx.Data = make(Data)
+	}
 	return &Error{
 		cause:    cause,
 		Def:      def,
@@ -189,6 +171,7 @@ func (def *Def) wrapf(err error, skip int, format string, args ...interface{}) *
 			ZContext: &ZContext{
 				CallLocation: l,
 				CallerName:   n,
+				Data:         make(Data),
 			},
 			cause: err,
 			Def:   def,
