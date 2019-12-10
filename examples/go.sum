@@ -7,8 +7,8 @@ github.com/EchoUtopia/zerror v1.0.10/go.mod h1:Ok7VMvRmQOWdhCQ/h7s9+gz2CxMXQ6asR
 github.com/EchoUtopia/zerror/gin v0.0.0-20191210084340-a3451734fdb7 h1:RX5MDADWP7YHIaWdxdiIiTaE7El6UDGA9/KkHClDNlM=
 github.com/EchoUtopia/zerror/gin v0.0.0-20191210084340-a3451734fdb7/go.mod h1:aiFIOy9IY1kfyPsgpK1IlzW6Syt0dTs89GRG64LvscA=
 github.com/EchoUtopia/zerror/logrus v0.0.0-20191210024356-0278f99462dc/go.mod h1:aLkASr0unGy4VMuKq2g6VD+K+Qd5k+lwYzss15Wy4+U=
-github.com/EchoUtopia/zerror/logrus v0.0.0-20191210084340-a3451734fdb7 h1:GwOGkBClGVvg9VfLCppDcIuARK1577T7NQPoDwfCEsY=
-github.com/EchoUtopia/zerror/logrus v0.0.0-20191210084340-a3451734fdb7/go.mod h1:5WbbcmHDyKMpTFDkgrdQHWdQDHM6nOGXkuBidiqdKAg=
+github.com/EchoUtopia/zerror/logrus v0.0.0-20191210093037-d7cf10cfa63d h1:5qMbf7RbAiIyFS3UP/jfxA0vhJwwmrA/gEpuen52cYo=
+github.com/EchoUtopia/zerror/logrus v0.0.0-20191210093037-d7cf10cfa63d/go.mod h1:5WbbcmHDyKMpTFDkgrdQHWdQDHM6nOGXkuBidiqdKAg=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
