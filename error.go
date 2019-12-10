@@ -23,7 +23,7 @@ type Def struct {
 	PCode       ProtocolCode `json:"protocol_code"`
 
 	// extended fields
-	Extensions map[string]interface{} `json:"extensions"`
+	extensions map[string]interface{}
 }
 
 type Data map[string]interface{}
@@ -35,19 +35,26 @@ type ZContext struct {
 	Ctx          context.Context
 }
 
+type Error struct {
+	cause error
+	Def   *Def
+	msg   string
+	*ZContext
+}
+
+var InternalDef = &Def{
+	Code:        BizCodeInternal,
+	PCode:       CodeInternal,
+	Msg:         `internal error`,
+	Description: `this is server internal error, please contact admin`,
+}
+
 func (ctx *ZContext) Merge(m *ZContext) {
 	ctx.CallLocation = m.CallLocation
 	ctx.CallerName += `/` + m.CallerName
 	for k, v := range m.Data {
 		ctx.Data[k] = v
 	}
-}
-
-type Error struct {
-	cause error
-	Def   *Def
-	msg   string
-	*ZContext
 }
 
 func NewError(cause error, def *Def, msg string, ctx *ZContext) *Error {
@@ -124,11 +131,19 @@ func (def *Def) WithMsg(msg string) *Def {
 }
 
 func (def *Def) Extend(k string, v interface{}) *Def {
-	if def.Extensions == nil {
-		def.Extensions = make(map[string]interface{})
+	if def.extensions == nil {
+		def.extensions = make(map[string]interface{})
 	}
-	def.Extensions[k] = v
+	def.extensions[k] = v
 	return def
+}
+
+func (def *Def) GetExtension(key string) (interface{}, bool) {
+	if def.extensions == nil {
+		return nil, false
+	}
+	value, ok := def.extensions[key]
+	return value, ok
 }
 
 func (def *Def) WithDesc(desc string) *Def {
@@ -189,13 +204,6 @@ func (def *Def) Errorf(format string, args ...interface{}) *Error {
 	return def.wrapf(err, 3, ``)
 }
 
-var InternalDef = &Def{
-	Code:        BizCodeInternal,
-	PCode:       CodeInternal,
-	Msg:         `internal error`,
-	Description: `this is server internal error, please contact admin`,
-}
-
 func (def *Def) GetResponser(err error) Responser {
 	s := Manager.responseFunc()
 	s.SetCode(def.Code)
@@ -205,7 +213,7 @@ func (def *Def) GetResponser(err error) Responser {
 	return s
 }
 
-func (def *Def) Equal(err error) bool {
+func (def *Def) Make(err error) bool {
 	zerr, ok := err.(*Error)
 	if !ok {
 		return false

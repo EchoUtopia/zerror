@@ -69,22 +69,17 @@ func ExampleJsonDumpGroups() {
 	// "TestErr1": {
 	// "code": "test-err:test-err1",
 	// "description": "",
-	// "protocol_code": 0,
-	// "extensions": null
+	// "protocol_code": 0
 	// },
 	// "Err": {
 	// "code": "custom-code",
 	// "description": "",
-	// "protocol_code": 0,
-	// "extensions": null
+	// "protocol_code": 0
 	// },
 	// "ThisISAVeryLongName": {
 	// "code": "test-err:this-is-avery-long-name",
 	// "description": "",
-	// "protocol_code": 0,
-	// "extensions": {
-	// "log_level": 23
-	// }
+	// "protocol_code": 0
 	// }
 	// }
 	// ]
@@ -157,7 +152,7 @@ func ExampleDefaultDef() {
 	defer unregister()
 	fmt.Printf("%+v\n", errDef)
 	// Output:
-	// &{Code: Msg:msg Description: PCode:500 Extensions:map[]}
+	// &{Code: Msg:msg Description: PCode:500 extensions:map[]}
 }
 
 type ForDefaultGroup struct {
@@ -186,10 +181,10 @@ func ExampleDef_Is() {
 	def1 := DefaultDef(`default2`)
 	wrapped := def.Wrap(originalError)
 	wrapped1 := def1.Wrap(wrapped)
-	fmt.Println(def.Equal(wrapped))
-	fmt.Println(def1.Equal(wrapped1))
-	fmt.Println(def.Equal(wrapped1))
-	fmt.Println(def1.Equal(wrapped))
+	fmt.Println(def.Make(wrapped))
+	fmt.Println(def1.Make(wrapped1))
+	fmt.Println(def.Make(wrapped1))
+	fmt.Println(def1.Make(wrapped))
 	// Output:
 	// true
 	// true

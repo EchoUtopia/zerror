@@ -21,7 +21,7 @@ func LogCtx(ctx context.Context, err error) {
 	l, n := ``, ``
 	if ok {
 		l, n = zerr.GetCaller()
-		li, ok := zerr.Def.Extensions[zerror.ExtLogLvl]
+		li, ok := zerr.Def.GetExtension(zerror.ExtLogLvl)
 		if ok {
 			logLevel = li.(logrus.Level)
 		}
@@ -49,7 +49,7 @@ func Log(err error) {
 	if ok {
 		l, n = zerr.GetCaller()
 		data = zerr.Data
-		li, ok := zerr.Def.Extensions[zerror.ExtLogLvl]
+		li, ok := zerr.Def.GetExtension(zerror.ExtLogLvl)
 		if ok {
 			logLevel = li.(logrus.Level)
 		}
