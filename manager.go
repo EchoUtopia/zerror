@@ -11,10 +11,10 @@ import (
 
 var (
 	registered int32
-	Manager    = &zmanager{Options: &Options{defaultPCode: CodeInvalid}}
+	Manager    = &Zmanager{Options: &Options{defaultPCode: CodeInvalid}}
 )
 
-type zmanager struct {
+type Zmanager struct {
 	*Options
 	errGroups []interface{}
 }
@@ -86,7 +86,7 @@ func JsonDumpGroups(ident string) string {
 	return string(mared)
 }
 
-func New(options ...Option) *zmanager {
+func New(options ...Option) *Zmanager {
 	do := &Options{
 		wordConnector:  `-`,
 		codeConnector:  `:`,
@@ -99,14 +99,14 @@ func New(options ...Option) *zmanager {
 	for _, setter := range options {
 		setter(do)
 	}
-	m := &zmanager{
+	m := &Zmanager{
 		Options: do,
 	}
 	Manager = m
 	return m
 }
 
-func (m *zmanager) RegisterGroups(groups ...interface{}) {
+func (m *Zmanager) RegisterGroups(groups ...interface{}) {
 	if !atomic.CompareAndSwapInt32(&registered, 0, 1) {
 		panic(`groups registered twice`)
 	}
