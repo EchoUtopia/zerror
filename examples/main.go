@@ -70,7 +70,7 @@ func main() {
 		// zerror.WithResponser(),
 		// zerror.DefaultPCode(zerror.CodeBadRequest),
 		zerror.RespondMessage(true),
-		zerror.Extend(zerror.ExtLogLvl, logrus.StandardLogger()),
+		zerror.Extend(zerror.ExtLogger, logrus.StandardLogger()),
 		zerror.Extend(gin_ze.LogWhenRespond, true),
 	)
 
