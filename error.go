@@ -13,6 +13,7 @@ const (
 	BizCodeInternal = `zerror:internal`
 
 	ExtLogLvl = `log_level`
+	ExtLogger = `logger`
 )
 
 type Def struct {
