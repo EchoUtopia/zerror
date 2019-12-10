@@ -7,8 +7,8 @@ import (
 	"log"
 )
 
-var (
-	ExtractDataFromCtxFunc ExtractDataFromCtx
+const (
+	ExtExtractDataFromCtx = `extract_from_ctx`
 )
 
 type ExtractDataFromCtx func(context.Context) zerror.Data
@@ -29,8 +29,10 @@ func LogCtx(ctx context.Context, err error) {
 	} else {
 		l, n = zerror.GetCaller(nil, 2)
 	}
-	if ExtractDataFromCtxFunc != nil {
-		for k, v := range ExtractDataFromCtxFunc(ctx) {
+	extractor, ok := zerror.Manager.GetExtension(ExtExtractDataFromCtx)
+	if ok {
+		f := extractor.(ExtractDataFromCtx)
+		for k, v := range f(ctx) {
 			data[k] = v
 		}
 	}

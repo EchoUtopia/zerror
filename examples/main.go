@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"github.com/EchoUtopia/zerror"
 	gin_ze "github.com/EchoUtopia/zerror/gin"
+	logrus_ze "github.com/EchoUtopia/zerror/logrus"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
@@ -28,7 +30,8 @@ var (
 		Expired: zerror.DefaultDef(`token expired`).WithCode(`custom-expired`),
 	}
 
-	SmsCode = &zerror.Def{Code: `sms:code`, PCode: 500, Msg: `sms code`, Description: ``}
+	SmsCode    = &zerror.Def{Code: `sms:code`, PCode: 500, Msg: `sms code`, Description: ``}
+	exampleKey = `example_key`
 )
 
 // this is error group
@@ -41,6 +44,13 @@ type AuthGroup struct {
 	Prefix  string
 	Token   *zerror.Def
 	Expired *zerror.Def
+}
+
+func SetCtxValue() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx := c.Request.Context()
+		c.Request = c.Request.WithContext(context.WithValue(ctx, exampleKey, `context value`))
+	}
 }
 
 func HandleOriginal(c *gin.Context) {
@@ -62,8 +72,16 @@ func HandleDefault(c *gin.Context) {
 	gin_ze.JSON(c, err)
 }
 
-func main() {
+func ExtractFromCtx(ctx context.Context) zerror.Data {
+	out := make(zerror.Data)
+	value, ok := ctx.Value(exampleKey).(string)
+	if ok {
+		out[exampleKey] = value
+	}
+	return out
+}
 
+func main() {
 	logrus.SetLevel(logrus.DebugLevel)
 	manager := zerror.New(
 		// zerror.DebugMode(true),
@@ -72,12 +90,14 @@ func main() {
 		zerror.RespondMessage(true),
 		zerror.Extend(zerror.ExtLogger, logrus.StandardLogger()),
 		zerror.Extend(gin_ze.LogWhenRespond, true),
+		zerror.Extend(logrus_ze.ExtExtractDataFromCtx, logrus_ze.ExtractDataFromCtx(ExtractFromCtx)),
 	)
 
 	// error group must be registered
 	manager.RegisterGroups(Common, Auth)
 
 	r := gin.Default()
+	r.Use(SetCtxValue())
 	r.GET(`/error`, HandleDefault)
 	r.GET(`/error/original`, HandleOriginal)
 	r.GET(`/error/internal`, HandleInternal)
