@@ -189,7 +189,7 @@ func (def *Def) Errorf(format string, args ...interface{}) *Error {
 	return def.wrapf(err, 3, ``)
 }
 
-var InternalError = &Def{
+var InternalDef = &Def{
 	Code:        BizCodeInternal,
 	PCode:       CodeInternal,
 	Msg:         `internal error`,

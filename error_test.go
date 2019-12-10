@@ -91,7 +91,7 @@ func ExampleJsonDumpGroups() {
 }
 
 func ExampleGetCaller() {
-	_, caller := GetCaller(InternalError, 1)
+	_, caller := GetCaller(InternalDef, 1)
 	fmt.Println(caller)
 	// Output:
 	// ExampleGetCaller
@@ -137,7 +137,7 @@ func ExampleCustomResponser() {
 	)
 	m.RegisterGroups()
 	defer unregister()
-	rsp := InternalError.GetResponser(errors.New(`original error`))
+	rsp := InternalDef.GetResponser(errors.New(`original error`))
 	mared, err := json.Marshal(rsp)
 	if err != nil {
 		panic(err)

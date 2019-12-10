@@ -50,7 +50,7 @@ func HandleOriginal(c *gin.Context) {
 
 func HandleInternal(c *gin.Context) {
 	originalErr := errors.New(`original error`)
-	err := zerror.InternalError.Wrap(originalErr)
+	err := zerror.InternalDef.Wrap(originalErr)
 	err = Common.Args.Wrap(err)
 	gin_ze.JSON(c, err)
 }
