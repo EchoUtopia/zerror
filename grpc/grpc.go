@@ -27,3 +27,22 @@ func SetCustomRelation(zCode zerror.ProtocolCode, grpcCode codes.Code) {
 func ConvertToGrpcCode(c zerror.ProtocolCode) codes.Code {
 	return codeConvertMap[c]
 }
+
+// //  you can set the business code and grpc code in the interceptor
+// type interceptor struct {
+// 	logger logrus.FieldLogger
+// }
+// // your response message should have a Code field, which represents your business code
+// func (i *interceptor) UnaryServerInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+//
+// 	h, err := handler(ctx, req)
+// 	if err != nil {
+// 		zerr, ok := err.(*zerror.Error)
+// 		if ok {
+// 			h.Code = zerr.Def.Code
+// 			err = status.Error(grpc_ze.ConvertToGrpcCode(zerr.Def.PCode), zerr.Error())
+// 		}
+//      logrus_ze.Log(err)
+// 	}
+// 	return h, err
+// }

@@ -207,7 +207,8 @@ func (def *Def) Errorf(format string, args ...interface{}) *Error {
 func (def *Def) GetResponser(err error) Responser {
 	s := Manager.responseFunc()
 	s.SetCode(def.Code)
-	if Manager.RespondMsgSet && Manager.RespondMessage || !Manager.RespondMsgSet && Manager.debugMode {
+	if Manager.RespondMsgSet && Manager.RespondMessage ||
+		!Manager.RespondMsgSet && Manager.debugMode {
 		s.SetMessage(err.Error())
 	}
 	return s
