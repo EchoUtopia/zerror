@@ -58,7 +58,7 @@ func HandleInternal(c *gin.Context) {
 func HandleDefault(c *gin.Context) {
 
 	originalErr := errors.New(`original error`)
-	err := Common.Args.Wrap(originalErr).WithData(zerror.KV(`custom key`, `custom value`))
+	err := Common.Args.Wrap(originalErr).WithData(zerror.Data{`custom key`: `custom value`})
 	gin_ze.JSON(c, err)
 }
 

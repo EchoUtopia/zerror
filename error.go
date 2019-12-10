@@ -80,26 +80,14 @@ func (ze *Error) Error() string {
 	return msg
 }
 
-func (ze *Error) WithData(kvs ...*kv) *Error {
+func (ze *Error) WithData(data Data) *Error {
 	if ze.Data == nil {
-		ze.Data = make(Data, len(kvs)+2)
+		ze.Data = make(Data, len(data)+2)
 	}
-	for _, v := range kvs {
-		ze.Data[v.K] = v.V
+	for k, v := range data {
+		ze.Data[k] = v
 	}
 	return ze
-}
-
-type kv struct {
-	K string
-	V interface{}
-}
-
-func KV(k string, v interface{}) *kv {
-	return &kv{
-		K: k,
-		V: v,
-	}
 }
 
 func (ze *Error) WithContext(ctx context.Context) *Error {
