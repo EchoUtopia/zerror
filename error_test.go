@@ -133,6 +133,7 @@ func ExampleCustomResponser() {
 		WithResponser(func() Responser {
 			return new(customeRsp)
 		}),
+		RespondMessage(true),
 	)
 	m.RegisterGroups()
 	defer unregister()
@@ -142,6 +143,7 @@ func ExampleCustomResponser() {
 		panic(err)
 	}
 	fmt.Println(string(mared))
+
 	// Output:
 	// {"A":"zerror:internal","Msg":"original error"}
 }

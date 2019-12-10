@@ -4,6 +4,7 @@ type Options struct {
 	wordConnector  string
 	codeConnector  string
 	RespondMessage bool
+	RespondMsgSet  bool
 	responseFunc   func() Responser
 	defaultPCode   ProtocolCode
 	debugMode      bool
@@ -27,6 +28,7 @@ func CodeConnector(cc string) Option {
 func RespondMessage(respondMessage bool) Option {
 	return func(options *Options) {
 		options.RespondMessage = respondMessage
+		options.RespondMsgSet = true
 	}
 }
 
