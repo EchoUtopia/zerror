@@ -102,6 +102,12 @@ func main() {
 	r.GET(`/error`, HandleDefault)
 	r.GET(`/error/original`, HandleOriginal)
 	r.GET(`/error/internal`, HandleInternal)
+	r.GET(`/errors`, func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			`code`: `ok`,
+			`data`: manager.GetErrorGroups(),
+		})
+	})
 	r.Run(`:8989`)
 
 	// just go to see the http response and the logs in server sever side
