@@ -61,7 +61,7 @@ func ExampleJsonDumpGroups() {
 		Err:                 &Def{Code: `custom-code`},
 	}
 	Manager.RegisterGroups(data)
-	fmt.Println(JsonDumpGroups(``))
+	fmt.Println(Manager.JsonDumpGroups(``))
 	Manager.errGroups = nil
 	// Output:
 	// [
