@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	LogWhenRespond = `log_when_respond`
+	ExtLogWhenRespond = `log_when_respond`
 )
 
 func JSON(c *gin.Context, err error) {
@@ -26,7 +26,7 @@ func JSON(c *gin.Context, err error) {
 
 	c.JSON(int(def.PCode), def.GetResponser(zerr))
 	c.Abort()
-	if _, logWhenRespond := zerror.Manager.GetExtension(LogWhenRespond); logWhenRespond {
+	if _, logWhenRespond := zerror.Manager.GetExtension(ExtLogWhenRespond); logWhenRespond {
 		logrus_ze.LogCtx(c.Request.Context(), zerr)
 	}
 }

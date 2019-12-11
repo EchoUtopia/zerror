@@ -13,7 +13,10 @@ var codeConvertMap = map[zerror.ProtocolCode]codes.Code{
 	zerror.CodePermissionDenied:   codes.PermissionDenied,
 	zerror.CodeNotFound:           codes.NotFound,
 	zerror.CodeDeadlineExceeded:   codes.DeadlineExceeded,
+	zerror.CodeAlreadyExists:      codes.AlreadyExists,
 	zerror.CodeFailedPrecondition: codes.FailedPrecondition,
+	zerror.CodeResourceExhausted:  codes.ResourceExhausted,
+	zerror.CodeCancelled:          codes.Canceled,
 
 	zerror.CodeInternal:      codes.Internal,
 	zerror.CodeUnimplemented: codes.Unimplemented,
@@ -35,14 +38,15 @@ func ConvertToGrpcCode(c zerror.ProtocolCode) codes.Code {
 // // your response message should have a Code field, which represents your business code
 // func (i *interceptor) UnaryServerInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 //
-// 	h, err := handler(ctx, req)
+// 	rsp, err := handler(ctx, req)
 // 	if err != nil {
 // 		zerr, ok := err.(*zerror.Error)
 // 		if ok {
-// 			h.Code = zerr.Def.Code
+// 			// if rsp has Code field
+// 			rsp.Code = zerr.Def.Code
 // 			err = status.Error(grpc_ze.ConvertToGrpcCode(zerr.Def.PCode), zerr.Error())
 // 		}
 //      logrus_ze.Log(err)
 // 	}
-// 	return h, err
+// 	return rsp, err
 // }

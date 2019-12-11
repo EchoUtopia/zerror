@@ -46,6 +46,7 @@ type AuthGroup struct {
 	Expired *zerror.Def
 }
 
+// you can use middleware to extract some data in context, and log them
 func SetCtxValue() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
@@ -89,7 +90,7 @@ func main() {
 		// zerror.DefaultPCode(zerror.CodeBadRequest),
 		zerror.RespondMessage(true),
 		zerror.Extend(zerror.ExtLogger, logrus.StandardLogger()),
-		zerror.Extend(gin_ze.LogWhenRespond, true),
+		zerror.Extend(gin_ze.ExtLogWhenRespond, true),
 		zerror.Extend(logrus_ze.ExtExtractDataFromCtx, logrus_ze.ExtractDataFromCtx(ExtractFromCtx)),
 	)
 

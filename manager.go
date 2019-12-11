@@ -78,12 +78,16 @@ func InitErrGroup(group interface{}) {
 	}
 }
 
-func JsonDumpGroups(ident string) string {
-	mared, err := json.MarshalIndent(Manager.errGroups, ``, ident)
+func (m *Zmanager) JsonDumpGroups(ident string) string {
+	mared, err := json.MarshalIndent(m.errGroups, ``, ident)
 	if err != nil {
 		panic(err)
 	}
 	return string(mared)
+}
+
+func (m *Zmanager) GetErrorGroups() []interface{} {
+	return m.errGroups
 }
 
 func New(options ...Option) *Zmanager {
