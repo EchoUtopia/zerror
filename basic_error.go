@@ -9,42 +9,42 @@ const (
 	BizCodeAlreadyExists   = `zerror:already_exists`
 )
 
-var InternalDef = &Def{
+var Internal = &Def{
 	Code:        BizCodeInternal,
 	PCode:       CodeInternal,
 	Msg:         `internal error`,
 	Description: `this is server internal error, please contact admin`,
 }
 
-var BadRequestDef = &Def{
+var BadRequest = &Def{
 	Code:        BizCodeBadRequest,
 	PCode:       CodeBadRequest,
 	Msg:         `bad request`,
 	Description: `check your request parameters`,
 }
 
-var ForbiddenDef = &Def{
+var Forbidden = &Def{
 	Code:        BizCodeForbidden,
 	PCode:       CodePermissionDenied,
 	Msg:         `forbidden`,
 	Description: `you are forbidden to access`,
 }
 
-var NotFoundDef = &Def{
+var NotFound = &Def{
 	Code:        BizCodeNotFound,
 	Msg:         `not found`,
 	PCode:       CodeNotFound,
 	Description: `resource not found`,
 }
 
-var UnauthenticatedDef = &Def{
+var Unauthenticated = &Def{
 	Code:        BizCodeUnauthenticated,
 	Msg:         `unauthenticated`,
 	PCode:       CodeUnauthenticated,
 	Description: `please login`,
 }
 
-var AlreadyExistsDef = &Def{
+var AlreadyExists = &Def{
 	Code:        BizCodeAlreadyExists,
 	Msg:         `already exists`,
 	PCode:       CodeAlreadyExists,

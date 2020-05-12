@@ -17,7 +17,7 @@ func JSON(c *gin.Context, err error) {
 	var def *zerror.Def
 	zerr, ok := err.(*zerror.Error)
 	if !ok {
-		def = zerror.InternalDef
+		def = zerror.Internal
 		location, caller := zerror.GetCaller(def, 2)
 		zerr = zerror.NewError(err, def, ``, &zerror.ZContext{CallLocation: location, CallerName: caller})
 	} else {
