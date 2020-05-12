@@ -10,8 +10,6 @@ import (
 )
 
 const (
-	BizCodeInternal = `zerror:internal`
-
 	ExtLogLvl = `log_level`
 	ExtLogger = `logger`
 )
@@ -41,13 +39,6 @@ type Error struct {
 	Def   *Def
 	msg   string
 	*ZContext
-}
-
-var InternalDef = &Def{
-	Code:        BizCodeInternal,
-	PCode:       CodeInternal,
-	Msg:         `internal error`,
-	Description: `this is server internal error, please contact admin`,
 }
 
 func (ctx *ZContext) Merge(m *ZContext) {
