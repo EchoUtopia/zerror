@@ -21,6 +21,7 @@
 
 func DoSomething()error {
     ***
+    // return zerror.Internal.Wrap(errors.New(`***`))
     return zerror.BadRequest.New()
 }
 
