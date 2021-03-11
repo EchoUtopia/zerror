@@ -1,0 +1,163 @@
+package zerror
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"github.com/stretchr/testify/require"
+	"testing"
+)
+
+type TestErr struct {
+	TestErr1            *Def
+	Err                 *Def
+	ThisISAVeryLongName *Def
+}
+
+type TestErr1 struct {
+	Err    *Def
+	Prefix string
+}
+
+func TestMain(m *testing.M) {
+	Manager = Init()
+	m.Run()
+}
+
+func TestGenerateCode(t *testing.T) {
+	data := &TestErr{
+		TestErr1:            new(Def),
+		ThisISAVeryLongName: new(Def),
+		Err:                 &Def{Code: `custom-code`},
+	}
+	initErrGroup(data)
+	require.Equal(t, `test-err:test-err1`, data.TestErr1.Code)
+	require.Equal(t, `test-err:this-is-avery-long-name`, data.ThisISAVeryLongName.Code)
+
+	require.Equal(t, `custom-code`, data.Err.Code)
+	data.Err.Code = ``
+	defMap = make(map[string]*Def)
+	initErrGroup(data)
+	require.Equal(t, `test-err:err`, data.Err.Code)
+
+	data1 := &TestErr1{
+		Err:    new(Def),
+		Prefix: "",
+	}
+	initErrGroup(data1)
+	require.Equal(t, `err`, data1.Err.Code)
+
+	data1.Prefix = `custom-prefix`
+	data1.Err.Code = ``
+	initErrGroup(data1)
+	require.Equal(t, `custom-prefix:err`, data1.Err.Code)
+	require.Equal(t, ProtocolCode(200), data1.Err.PCode)
+
+}
+
+func ExampleGetCaller() {
+	_, caller := GetCaller(Internal, 1)
+	fmt.Println(caller)
+	// Output:
+	// ExampleGetCaller
+}
+
+func ExampleNested() {
+	unregister()
+	data := &TestErr{
+		TestErr1:            &Def{Msg: `msg1`},
+		ThisISAVeryLongName: new(Def),
+		Err:                 &Def{Code: `custom-code`, Msg: `msg2`},
+	}
+	initErrGroup(data)
+	ze := data.TestErr1.Wrap(data.Err.Wrap(errors.New(`original-error`)))
+	fmt.Println(ze.Error(), ze.callerName, ze.Def.Code)
+
+	ze = data.TestErr1.Wrapf(data.Err.Wrap(errors.New(`original-error`)), `wrap message: %s`, `ad`)
+	fmt.Println(ze.Error(), ze.callerName, ze.Def.Code)
+	// Output:
+	// test-err:test-err1 | custom-code | original-error ExampleNested/ExampleNested test-err:test-err1
+	//test-err:test-err1 | custom-code | original-error ExampleNested/ExampleNested test-err:test-err1
+}
+
+type customeRsp struct {
+	A   string
+	Msg string
+}
+
+func (c *customeRsp) SetCode(code string) {
+	c.A = code
+}
+
+func (c *customeRsp) SetMessage(msg string) {
+	c.Msg = msg
+}
+func (c *customeRsp) Error() string {
+	return c.Msg
+}
+
+func ExampleCustomResponser() {
+	unregister()
+	m := Init(
+		WithRender(func() Render {
+			return new(customeRsp)
+		}),
+		RespondMessage(true),
+	)
+	m.RegisterGroups()
+	defer unregister()
+	rsp := Internal.WithMsg(`original msg`).Render()
+	mared, err := json.Marshal(rsp)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(mared))
+
+	// Output:
+	// {"A":"zerror:internal","Msg":"zerror:internal: original msg"}
+}
+
+func ExampleDefaultDef() {
+
+	unregister()
+	m := Init(DefaultPCode(500))
+	data := &TestErr{}
+	m.RegisterGroups(data)
+	defer unregister()
+	fmt.Printf("%+v\n", data.Err)
+	// Output:
+	// &{Code:test-err:err Msg: Description: PCode:500 extensions:map[]}
+}
+
+func ExampleDef_Is() {
+
+	originalError := errors.New(`original error`)
+	def := &Def{Code: `def`}
+	def1 := &Def{Code: `def1`}
+
+	wrapped := def.Wrap(originalError)
+	wrapped1 := def1.Wrap(wrapped)
+
+	fmt.Println(wrapped1.Error())
+
+	fmt.Println(def.Cause(wrapped))
+	fmt.Println(def1.Cause(wrapped1))
+
+	fmt.Println(def.Cause(wrapped1))
+	fmt.Println(def1.Cause(wrapped))
+	// Output:
+	// def1 | def | original error
+	//true
+	//true
+	//true
+	//false
+}
+
+func BenchmarkDef_Wrap(b *testing.B) {
+
+	originalError := errors.New(`original error`)
+	def := &Def{Msg: `default`}
+	for i := 0; i < b.N; i++ {
+		def.wrapf(originalError, 1, ``)
+	}
+}
