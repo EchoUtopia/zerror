@@ -28,7 +28,7 @@ func DoSomething()error {
 ```
 
 
-then you can do many fantastic things:
+and you can do many other fantastic things:
 
 you can return http code predefined by error def in web request, or return corresponding grpc code in grpc request
 
