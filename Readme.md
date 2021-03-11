@@ -34,7 +34,9 @@ you can return http code predefined by error def in web request, or return corre
 
 you can log any thing 
 
-full examples see in examples directory
+## full examples 
+
+see in examples directory
 
 
 ## Why is zerror made
