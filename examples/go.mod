@@ -9,4 +9,4 @@ require (
 	google.golang.org/grpc v1.31.0
 )
 
-replace github.com/EchoUtopia/zerror v1.0.12 => ../
+replace github.com/EchoUtopia/zerror  => ../
