@@ -9,6 +9,8 @@ import (
 )
 
 const (
+	ExtLogLvl             = `log_level`
+	ExtLogger             = `logger`
 	ExtExtractDataFromCtx = `extract_from_ctx`
 )
 
@@ -22,7 +24,7 @@ func LogCtx(ctx context.Context, err error) {
 	l, n := ``, ``
 	if ok := errors.As(err, &zerr); ok {
 		l, n = zerr.GetCaller()
-		lli, ok := zerr.Def.GetExtension(zerror.ExtLogLvl)
+		lli, ok := zerr.Def.GetExtension(ExtLogLvl)
 		if ok {
 			logLevel = lli.(logrus.Level)
 		}
@@ -52,7 +54,7 @@ func Log(err error) {
 	if ok := errors.As(err, &zerr); ok {
 		l, n = zerr.GetCaller()
 		data = zerr.Data
-		lli, ok := zerr.Def.GetExtension(zerror.ExtLogLvl)
+		lli, ok := zerr.Def.GetExtension(ExtLogLvl)
 		if ok {
 			logLevel = lli.(logrus.Level)
 		}
@@ -68,14 +70,14 @@ func Log(err error) {
 
 func getAndLog(err error, data zerror.Data, level logrus.Level) {
 
-	iLogger, ok := zerror.Manager.GetExtension(zerror.ExtLogger)
+	iLogger, ok := zerror.Manager.GetExtension(ExtLogger)
 	logger, isLogger := iLogger.(logrus.FieldLogger)
 	if zerror.Manager.DebugMode() {
 		if !ok || !isLogger {
-			log.Panicf(`manager extension: %s not exist or is not logrus.FieldLogger`, zerror.ExtLogger)
+			log.Panicf(`manager extension: %s not exist or is not logrus.FieldLogger`, ExtLogger)
 		}
 	} else if !ok || !isLogger {
-		log.Printf(`manager extension: %s not exist or is not logrus.FieldLogger`, zerror.ExtLogger)
+		log.Printf(`manager extension: %s not exist or is not logrus.FieldLogger`, ExtLogger)
 		log.Printf(`data: %v, err: %s`, data, err)
 		return
 	}

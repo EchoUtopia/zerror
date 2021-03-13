@@ -10,17 +10,13 @@ import (
 	"sync"
 )
 
-const (
-	ExtLogLvl = `log_level`
-	ExtLogger = `logger`
-)
-
 type Def struct {
 	// error code,
-	Code        string       `json:"code"`
-	Msg         string       `json:"msg"`
-	Description string       `json:"description"`
-	PCode       ProtocolCode `json:"protocol_code"`
+	Code        string `json:"code"`
+	Msg         string `json:"msg"`
+	Description string `json:"desc"`
+	// can be used as http status code or grpc status code
+	Status Status `json:"status"`
 
 	// extended fields
 	extensions map[string]interface{}
@@ -29,10 +25,18 @@ type Def struct {
 type Data map[string]interface{}
 
 type ZContext struct {
-	callLocation string
-	callerName   string
-	Data         Data
-	Ctx          context.Context
+	callerLoc  string
+	callerName string
+	Data       Data
+	Ctx        context.Context
+}
+
+func (ctx *ZContext) Merge(m *ZContext) {
+	ctx.callerLoc = m.callerLoc
+	ctx.callerName += `/` + m.callerName
+	for k, v := range m.Data {
+		ctx.Data[k] = v
+	}
 }
 
 type Error struct {
@@ -42,29 +46,22 @@ type Error struct {
 	*ZContext
 }
 
-func (ctx *ZContext) Merge(m *ZContext) {
-	ctx.callLocation = m.callLocation
-	ctx.callerName += `/` + m.callerName
-	for k, v := range m.Data {
-		ctx.Data[k] = v
-	}
-}
-
 func (ze *Error) Unwrap() error {
 	return ze.cause
 }
 func (ze *Error) Error() string {
-	msg := ze.Def.Code
-
+	b := strings.Builder{}
+	b.WriteString(ze.Def.Code)
 	if ze.msg != `` {
-		msg += `: ` + ze.msg
+		b.WriteString(`(`)
+		b.WriteString(ze.msg)
+		b.WriteString(`)`)
 	}
-
 	if ze.cause != nil {
-		msg += ` | ` + ze.cause.Error()
+		b.WriteString(` | `)
+		b.WriteString(ze.cause.Error())
 	}
-
-	return msg
+	return b.String()
 }
 
 func (ze *Error) WithData(data Data) *Error {
@@ -77,13 +74,31 @@ func (ze *Error) WithData(data Data) *Error {
 	return ze
 }
 
-func (ze *Error) WithContext(ctx context.Context) *Error {
+func (ze *Error) WithKVs(kvs ...interface{}) *Error {
+	if ze.Data == nil {
+		ze.Data = make(Data, len(kvs))
+	}
+	for i := 0; i < len(kvs); i += 2 {
+		k, ok := kvs[i].(string)
+		if !ok {
+			k = fmt.Sprintf(`%v`, kvs[i])
+		}
+		var v interface{}
+		if i+1 < len(kvs) {
+			v = kvs[i+1]
+		}
+		ze.Data[k] = v
+	}
+	return ze
+}
+
+func (ze *Error) WithCtx(ctx context.Context) *Error {
 	ze.Ctx = ctx
 	return ze
 }
 
 func (ze *Error) GetCaller() (string, string) {
-	return ze.callLocation, ze.callerName
+	return ze.callerLoc, ze.callerName
 }
 
 func (ze *Error) Render() Render {
@@ -94,8 +109,8 @@ func (ze *Error) Render() Render {
 		code = Internal.Code
 	}
 	s.SetCode(code)
-	if Manager.RespondMsgSet && Manager.RespondMessage ||
-		!Manager.RespondMsgSet && Manager.debugMode {
+	if Manager.respondMsgSet && Manager.respondMessage ||
+		!Manager.respondMsgSet && Manager.debugMode {
 		s.SetMessage(ze.Error())
 	}
 	return s
@@ -130,9 +145,9 @@ func (def *Def) wrapf(err error, skip int, format string, args ...interface{}) *
 		zErr.callerName += `/` + n
 	} else {
 		zErr.ZContext = &ZContext{
-			callLocation: l,
-			callerName:   n,
-			Data:         make(Data),
+			callerLoc:  l,
+			callerName: n,
+			Data:       make(Data),
 		}
 	}
 	if format != `` {
@@ -188,34 +203,33 @@ func (def *Def) Cause(err error) bool {
 	}
 }
 
-func FromCode(code string) (bool, *Error) {
+func FromCode(code string) (*Error, bool) {
 	def, ok := defMap[code]
 	if !ok {
-		return ok, nil
+		return nil, ok
 	}
-	return true, def.New()
+	return def.New(), true
 }
 
-func GetCaller(def *Def, skip int) (string, string) {
+func GetCaller(def *Def, skip int) (loc string, name string) {
 	pc, file, line, ok := runtime.Caller(skip)
-	var callLocation, callerName string
-	if ok && (Manager.debugMode || def == nil || def.Code == BizCodeInternal) {
-		callLocation = file + "/" + strconv.Itoa(line)
+	if ok && (Manager.debugMode || def == nil || def.Code == CodeInternal) {
+		loc = file + "/" + strconv.Itoa(line)
 	}
 	if ok {
 		funcName := runtime.FuncForPC(pc).Name()
-		callerName = funcName[strings.LastIndexByte(funcName, '.')+1:]
+		name = funcName[strings.LastIndexByte(funcName, '.')+1:]
 	}
-	return callLocation, callerName
+	return
 }
 
 // add '-' before initial capital letters and turn lower
-func GetStandardName(name string) string {
+func getStandardName(name string) string {
 	out := ``
 	lastLower := true
 	for k, v := range name {
 		if v >= 'A' && v <= 'Z' && k != 0 && lastLower {
-			out += Manager.wordConnector
+			out += `-`
 			lastLower = false
 		} else {
 			lastLower = true

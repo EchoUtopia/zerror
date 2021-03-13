@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	Manager = &Zmanager{Options: &Options{defaultPCode: CodeInvalid}}
+	Manager = &Zmanager{Options: &Options{defaultStatus: StatusInvalid}}
 	defMap  = map[string]*Def{}
 )
 
@@ -37,11 +37,7 @@ func initErrGroup(group interface{}) {
 		log.Panicf(`error group is not struct, but: %s`, typ.Kind())
 	}
 
-	groupName := GetStandardName(typ.Name())
-	//if !strings.HasSuffix(typ.Name(), `Group`) || len(groupName) <= 5 {
-	//	log.Panicf(`error group type: %s must has suffix Group`, groupName)
-	//}
-	//prefix := GetStandardName(groupName[:len(groupName)-5]) + Manager.codeConnector
+	groupName := getStandardName(typ.Name())
 	prefix := groupName + Manager.codeConnector
 	nameField, ok := typ.FieldByName(`Prefix`)
 	if ok {
@@ -69,19 +65,19 @@ func initErrGroup(group interface{}) {
 		}
 		if structField.IsNil() {
 			def = &Def{
-				Code: fmt.Sprintf(`%s%s`, prefix, GetStandardName(tField.Name)),
+				Code: fmt.Sprintf(`%s%s`, prefix, getStandardName(tField.Name)),
 			}
 			structField.Set(reflect.ValueOf(def))
 		} else {
 			def = structField.Interface().(*Def)
 		}
 
-		if def.PCode == CodeInvalid {
-			def.PCode = Manager.defaultPCode
+		if def.Status == StatusInvalid {
+			def.Status = Manager.defaultStatus
 		}
 
 		if def.Code == `` {
-			def.Code = fmt.Sprintf(`%s%s`, prefix, GetStandardName(tField.Name))
+			def.Code = fmt.Sprintf(`%s%s`, prefix, getStandardName(tField.Name))
 		}
 		if defMap[def.Code] != nil {
 			log.Panicf(`def code: %s duplicated`, def.Code)
@@ -103,13 +99,12 @@ func (m *Zmanager) GetErrorGroups() []interface{} {
 
 func Init(options ...Option) *Zmanager {
 	do := &Options{
-		wordConnector:  `-`,
 		codeConnector:  `:`,
-		RespondMessage: true,
+		respondMessage: true,
 		render: func() Render {
 			return new(StdResponse)
 		},
-		defaultPCode: 200,
+		defaultStatus: 200,
 	}
 	for _, setter := range options {
 		setter(do)
@@ -141,7 +136,7 @@ func (m *Zmanager) RegisterGroups(groups ...interface{}) {
 func unregister() {
 	Manager.registered = 0
 	Manager.errGroups = nil
-	Manager.defaultPCode = CodeInvalid
+	Manager.defaultStatus = StatusInvalid
 	defMap = map[string]*Def{}
 }
 

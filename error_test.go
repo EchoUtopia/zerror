@@ -51,7 +51,7 @@ func TestGenerateCode(t *testing.T) {
 	data1.Err.Code = ``
 	initErrGroup(data1)
 	require.Equal(t, `custom-prefix:err`, data1.Err.Code)
-	require.Equal(t, ProtocolCode(200), data1.Err.PCode)
+	require.Equal(t, Status(200), data1.Err.Status)
 
 }
 
@@ -71,13 +71,17 @@ func ExampleNested() {
 	}
 	initErrGroup(data)
 	ze := data.TestErr1.Wrap(data.Err.Wrap(errors.New(`original-error`)))
-	fmt.Println(ze.Error(), ze.callerName, ze.Def.Code)
+	fmt.Println(ze.Error())
+	fmt.Println(ze.callerName, ze.Def.Code)
 
 	ze = data.TestErr1.Wrapf(data.Err.Wrap(errors.New(`original-error`)), `wrap message: %s`, `ad`)
-	fmt.Println(ze.Error(), ze.callerName, ze.Def.Code)
+	fmt.Println(ze.Error())
+	fmt.Println(ze.callerName, ze.Def.Code)
 	// Output:
-	// test-err:test-err1 | custom-code | original-error ExampleNested/ExampleNested test-err:test-err1
-	//test-err:test-err1 | custom-code | original-error ExampleNested/ExampleNested test-err:test-err1
+	// test-err:test-err1 | custom-code | original-error
+	//ExampleNested/ExampleNested test-err:test-err1
+	//test-err:test-err1(wrap message: ad) | custom-code | original-error
+	//ExampleNested/ExampleNested test-err:test-err1
 }
 
 type customeRsp struct {
@@ -101,8 +105,7 @@ func ExampleCustomResponser() {
 	m := Init(
 		WithRender(func() Render {
 			return new(customeRsp)
-		}),
-		RespondMessage(true),
+		}, true),
 	)
 	m.RegisterGroups()
 	defer unregister()
@@ -114,19 +117,19 @@ func ExampleCustomResponser() {
 	fmt.Println(string(mared))
 
 	// Output:
-	// {"A":"zerror:internal","Msg":"zerror:internal: original msg"}
+	// {"A":"zerror:internal","Msg":"zerror:internal(original msg)"}
 }
 
 func ExampleDefaultDef() {
 
 	unregister()
-	m := Init(DefaultPCode(500))
+	m := Init(DefaultStatus(500))
 	data := &TestErr{}
 	m.RegisterGroups(data)
 	defer unregister()
 	fmt.Printf("%+v\n", data.Err)
 	// Output:
-	// &{Code:test-err:err Msg: Description: PCode:500 extensions:map[]}
+	// &{Code:test-err:err Msg: Description: Status:500 extensions:map[]}
 }
 
 func ExampleDef_Is() {

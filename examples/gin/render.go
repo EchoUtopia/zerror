@@ -19,7 +19,7 @@ func JSON(c *gin.Context, err error) {
 	if ok := errors.As(err, &zerr); !ok {
 		zerr = zerror.Internal.Wrap(err)
 	}
-	c.JSON(int(zerr.PCode), zerr.Render())
+	c.JSON(int(zerr.Status), zerr.Render())
 	c.Abort()
 	if _, logWhenRespond := zerror.Manager.GetExtension(ExtLogWhenRespond); logWhenRespond {
 		logrus_ze.LogCtx(c.Request.Context(), err)

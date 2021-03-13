@@ -1,4 +1,4 @@
-package outer_error
+package custom_error
 
 import "github.com/EchoUtopia/zerror"
 

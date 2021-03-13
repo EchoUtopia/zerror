@@ -10,29 +10,29 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-var codeConvertMap = map[zerror.ProtocolCode]codes.Code{
-	zerror.CodeOk: codes.OK,
+var codeConvertMap = map[zerror.Status]codes.Code{
+	zerror.StatusOk: codes.OK,
 
-	zerror.CodeBadRequest:         codes.InvalidArgument,
-	zerror.CodeUnauthenticated:    codes.Unauthenticated,
-	zerror.CodePermissionDenied:   codes.PermissionDenied,
-	zerror.CodeNotFound:           codes.NotFound,
-	zerror.CodeDeadlineExceeded:   codes.DeadlineExceeded,
-	zerror.CodeAlreadyExists:      codes.AlreadyExists,
-	zerror.CodeFailedPrecondition: codes.FailedPrecondition,
-	zerror.CodeResourceExhausted:  codes.ResourceExhausted,
-	zerror.CodeCancelled:          codes.Canceled,
+	zerror.StatusBadRequest:         codes.InvalidArgument,
+	zerror.StatusUnauthenticated:    codes.Unauthenticated,
+	zerror.StatusPermissionDenied:   codes.PermissionDenied,
+	zerror.StatusNotFound:           codes.NotFound,
+	zerror.StatusDeadlineExceeded:   codes.DeadlineExceeded,
+	zerror.StatusAlreadyExists:      codes.AlreadyExists,
+	zerror.StatusFailedPrecondition: codes.FailedPrecondition,
+	zerror.StatusResourceExhausted:  codes.ResourceExhausted,
+	zerror.StatusCancelled:          codes.Canceled,
 
-	zerror.CodeInternal:      codes.Internal,
-	zerror.CodeUnimplemented: codes.Unimplemented,
-	zerror.CodeUnavailable:   codes.Unavailable,
+	zerror.StatusInternal:      codes.Internal,
+	zerror.StatusUnimplemented: codes.Unimplemented,
+	zerror.StatusUnavailable:   codes.Unavailable,
 }
 
-func SetCustomRelation(zCode zerror.ProtocolCode, grpcCode codes.Code) {
+func SetCustomRelation(zCode zerror.Status, grpcCode codes.Code) {
 	codeConvertMap[zCode] = grpcCode
 }
 
-func ConvertToGrpcCode(c zerror.ProtocolCode) codes.Code {
+func ConvertToGrpcCode(c zerror.Status) codes.Code {
 	return codeConvertMap[c]
 }
 
@@ -49,7 +49,7 @@ func (i *interceptor) UnaryServerInterceptor(ctx context.Context, req interface{
 		zerr, ok := err.(*zerror.Error)
 		if ok {
 			// if rsp has Code field
-			err = status.Error(ConvertToGrpcCode(zerr.Def.PCode), zerr.Code)
+			err = status.Error(ConvertToGrpcCode(zerr.Def.Status), zerr.Code)
 		}
 		logrus_ze.Log(err)
 	}
@@ -67,7 +67,7 @@ func ExampleHandleGrpcResponse() error {
 	if err := client.Call(context.TODO()); err != nil {
 		sts, ok := status.FromError(err)
 		if ok {
-			ok, zErr := zerror.FromCode(sts.Message())
+			zErr, ok := zerror.FromCode(sts.Message())
 			if ok {
 				return zErr
 			}

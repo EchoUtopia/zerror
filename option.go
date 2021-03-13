@@ -3,44 +3,29 @@ package zerror
 type Options struct {
 	wordConnector  string
 	codeConnector  string
-	RespondMessage bool
-	RespondMsgSet  bool
+	respondMessage bool
+	respondMsgSet  bool
 	render         func() Render
-	defaultPCode   ProtocolCode
+	defaultStatus  Status
 	debugMode      bool
 	extensions     map[string]interface{}
 }
 
 type Option func(*Options)
 
-func WordConnector(wc string) Option {
-	return func(options *Options) {
-		options.wordConnector = wc
-	}
-}
-
-func CodeConnector(cc string) Option {
-	return func(options *Options) {
-		options.codeConnector = cc
-	}
-}
-
-func RespondMessage(respondMessage bool) Option {
-	return func(options *Options) {
-		options.RespondMessage = respondMessage
-		options.RespondMsgSet = true
-	}
-}
-
-func WithRender(rf func() Render) Option {
+func WithRender(rf func() Render, renderMsg bool) Option {
 	return func(options *Options) {
 		options.render = rf
+		if renderMsg {
+			options.respondMessage = renderMsg
+			options.respondMsgSet = true
+		}
 	}
 }
 
-func DefaultPCode(code ProtocolCode) Option {
+func DefaultStatus(status Status) Option {
 	return func(options *Options) {
-		options.defaultPCode = code
+		options.defaultStatus = status
 	}
 }
 

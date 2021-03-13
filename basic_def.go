@@ -1,52 +1,47 @@
 package zerror
 
 const (
-	BizCodeInternal        = `zerror:internal`
-	BizCodeBadRequest      = `zerror:bad_request`
-	BizCodeForbidden       = `zerror:forbidden`
-	BizCodeNotFound        = `zerror:not_found`
-	BizCodeUnauthenticated = `zerror:unauthenticated`
-	BizCodeAlreadyExists   = `zerror:already_exists`
+	CodeInternal = `zerror:internal`
 )
 
 var Internal = &Def{
-	Code:        BizCodeInternal,
-	PCode:       CodeInternal,
+	Code:        CodeInternal,
+	Status:      StatusInternal,
 	Msg:         `internal error`,
-	Description: `this is server internal error, please contact admin`,
+	Description: `server internal error`,
 }
 
 var BadRequest = &Def{
-	Code:        BizCodeBadRequest,
-	PCode:       CodeBadRequest,
+	Code:        `zerror:bad_request`,
+	Status:      StatusBadRequest,
 	Msg:         `bad request`,
-	Description: `check your request parameters`,
+	Description: `bad request`,
 }
 
 var Forbidden = &Def{
-	Code:        BizCodeForbidden,
-	PCode:       CodePermissionDenied,
+	Code:        `zerror:forbidden`,
+	Status:      StatusPermissionDenied,
 	Msg:         `forbidden`,
 	Description: `you are forbidden to access`,
 }
 
 var NotFound = &Def{
-	Code:        BizCodeNotFound,
+	Code:        `zerror:not_found`,
 	Msg:         `not found`,
-	PCode:       CodeNotFound,
+	Status:      StatusNotFound,
 	Description: `resource not found`,
 }
 
 var Unauthenticated = &Def{
-	Code:        BizCodeUnauthenticated,
+	Code:        `zerror:unauthenticated`,
 	Msg:         `unauthenticated`,
-	PCode:       CodeUnauthenticated,
+	Status:      StatusUnauthenticated,
 	Description: `please login`,
 }
 
 var AlreadyExists = &Def{
-	Code:        BizCodeAlreadyExists,
+	Code:        `zerror:already_exists`,
 	Msg:         `already exists`,
-	PCode:       CodeAlreadyExists,
+	Status:      StatusAlreadyExists,
 	Description: `already exists`,
 }

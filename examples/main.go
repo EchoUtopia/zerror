@@ -17,10 +17,10 @@ var (
 		Prefix: "",
 
 		// the code will be `args`
-		Args: (&zerror.Def{Code: ``, PCode: 400, Msg: `args err`, Description: ``}).Extend(zerror.ExtLogLvl, logrus.DebugLevel),
+		Args: (&zerror.Def{Code: ``, Status: 400, Msg: `args err`, Description: ``}).Extend(logrus_ze.ExtLogLvl, logrus.DebugLevel),
 	}
 
-	SmsCode           = &zerror.Def{Code: `sms:code`, PCode: 500, Msg: `sms code`, Description: ``}
+	SmsCode           = &zerror.Def{Code: `sms:code`, Status: 500, Msg: `sms code`, Description: ``}
 	exampleContextKey = `context_key`
 )
 
@@ -53,7 +53,7 @@ func HandleInternal(c *gin.Context) {
 func HandleDefault(c *gin.Context) {
 
 	originalErr := errors.New(`original error`)
-	err := outer_error.Auth.Token.Wrap(originalErr).WithData(zerror.Data{`custom key`: `custom value`})
+	err := custom_error.Auth.Token.Wrap(originalErr).WithData(zerror.Data{`custom key`: `custom value`})
 	gin_ze.JSON(c, err)
 }
 
@@ -70,16 +70,14 @@ func main() {
 	logrus.SetLevel(logrus.DebugLevel)
 	manager := zerror.Init(
 		// zerror.DebugMode(true),
-		// zerror.WithResponser(),
-		// zerror.DefaultPCode(zerror.CodeBadRequest),
-		zerror.RespondMessage(true),
-		zerror.Extend(zerror.ExtLogger, logrus.StandardLogger()),
+		// zerror.DefaultStatus(zerror.StatusBadRequest),
+		zerror.Extend(logrus_ze.ExtLogger, logrus.StandardLogger()),
 		zerror.Extend(gin_ze.ExtLogWhenRespond, true),
 		zerror.Extend(logrus_ze.ExtExtractDataFromCtx, logrus_ze.ExtractDataFromCtx(ExtractFromCtx)),
 	)
 
 	// error group must be registered
-	manager.RegisterGroups(Common, outer_error.Auth)
+	manager.RegisterGroups(Common, custom_error.Auth)
 
 	r := gin.Default()
 	r.Use(SetCtxValue())
