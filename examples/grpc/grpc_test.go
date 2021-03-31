@@ -1,7 +1,7 @@
 package grpc
 
 import (
-	"github.com/EchoUtopia/zerror"
+	"github.com/EchoUtopia/zerror/v2"
 	"testing"
 )
 

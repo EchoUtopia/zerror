@@ -1,6 +1,6 @@
 package custom_error
 
-import "github.com/EchoUtopia/zerror"
+import "github.com/EchoUtopia/zerror/v2"
 
 var (
 	Auth = &auth{

@@ -2,8 +2,8 @@ package grpc
 
 import (
 	"context"
-	"github.com/EchoUtopia/zerror"
-	logrus_ze "github.com/EchoUtopia/zerror/examples/logrus"
+	logrus_ze "github.com/EchoUtopia/zerror/examples/v2/logrus"
+	"github.com/EchoUtopia/zerror/v2"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"errors"
-	"github.com/EchoUtopia/zerror"
-	gin_ze "github.com/EchoUtopia/zerror/examples/gin"
-	logrus_ze "github.com/EchoUtopia/zerror/examples/logrus"
-	"github.com/EchoUtopia/zerror/examples/outer_error"
+	"github.com/EchoUtopia/zerror/examples/v2/custom_error"
+	gin_ze "github.com/EchoUtopia/zerror/examples/v2/gin"
+	logrus_ze "github.com/EchoUtopia/zerror/examples/v2/logrus"
+	"github.com/EchoUtopia/zerror/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )

@@ -3,7 +3,7 @@ package logrus
 import (
 	"context"
 	"errors"
-	"github.com/EchoUtopia/zerror"
+	"github.com/EchoUtopia/zerror/v2"
 	"github.com/sirupsen/logrus"
 	"log"
 )
