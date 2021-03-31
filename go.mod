@@ -1,4 +1,4 @@
-module github.com/EchoUtopia/zerror
+module github.com/EchoUtopia/zerror/v2
 
 go 1.13
 
