@@ -43,7 +43,7 @@ type Error struct {
 	cause error
 	*Def
 	msg string
-	*ZContext
+	ZContext
 }
 
 func (ze *Error) Unwrap() error {
