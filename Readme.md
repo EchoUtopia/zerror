@@ -1,5 +1,13 @@
 # ZError
 
+## Notice
+
+v1 is deprecated, please use v2
+
+import path : `github.com/EchoUtopia/zerror/v2`
+
+example import path: `github.com/EchoUtopia/zerror/examples/v2`
+
 [中文文档](./Readme_zh.md)
 
 ## Terminology
