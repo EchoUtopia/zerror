@@ -144,7 +144,7 @@ func (def *Def) wrapf(err error, skip int, format string, args ...interface{}) *
 		zErr.ZContext = zCause.ZContext
 		zErr.callerName += `/` + n
 	} else {
-		zErr.ZContext = &ZContext{
+		zErr.ZContext = ZContext{
 			callerLoc:  l,
 			callerName: n,
 			Data:       make(Data),
