@@ -14,6 +14,10 @@ const (
 	ExtExtractDataFromCtx = `extract_from_ctx`
 )
 
+func init(){
+	zerror.Internal.Extend(ExtLogLvl, logrus.ErrorLevel)
+}
+
 type ExtractDataFromCtx func(context.Context) zerror.Data
 
 func LogCtx(ctx context.Context, err error) {
@@ -48,7 +52,7 @@ func LogCtx(ctx context.Context, err error) {
 
 func Log(err error) {
 	data := zerror.Data{}
-	logLevel := logrus.ErrorLevel
+	logLevel := logrus.InfoLevel
 	l, n := ``, ``
 	zerr := &zerror.Error{}
 	if ok := errors.As(err, &zerr); ok {
@@ -72,14 +76,10 @@ func getAndLog(err error, data zerror.Data, level logrus.Level) {
 
 	iLogger, ok := zerror.Manager.GetExtension(ExtLogger)
 	logger, isLogger := iLogger.(logrus.FieldLogger)
-	if zerror.Manager.DebugMode() {
-		if !ok || !isLogger {
-			log.Panicf(`manager extension: %s not exist or is not logrus.FieldLogger`, ExtLogger)
-		}
-	} else if !ok || !isLogger {
-		log.Printf(`manager extension: %s not exist or is not logrus.FieldLogger`, ExtLogger)
-		log.Printf(`data: %v, err: %s`, data, err)
-		return
+	if ! ok || ! isLogger {
+		log.Printf(`you should extend for logger with statement: 
+		zerror.Extend(logrus_ze.ExtLogger, logger)`)
+		logger = logrus.StandardLogger()
 	}
 	logger.WithFields(logrus.Fields(data)).WithError(err).Log(level)
 }
