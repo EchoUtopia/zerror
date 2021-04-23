@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/require"
+	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 type TestErr struct {
@@ -51,7 +53,7 @@ func TestGenerateCode(t *testing.T) {
 	data1.Err.Code = ``
 	initErrGroup(data1)
 	require.Equal(t, `custom-prefix:err`, data1.Err.Code)
-	require.Equal(t, Status(200), data1.Err.Status)
+	require.Equal(t, Status(500), data1.Err.Status)
 
 }
 
@@ -163,4 +165,30 @@ func BenchmarkDef_Wrap(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		def.wrapf(originalError, 1, ``)
 	}
+}
+
+func TestData(t *testing.T) {
+	zerr := Internal.New().
+		WithData(map[string]interface{}{
+			`a1`: `a2`,
+		}).
+		WithData(map[string]interface{}{
+			`b1`: `b2`,
+		}).
+		WithKVs(`c1`, `c2`, `d1`, `d2`)
+	expected := Data{
+		`a1`: `a2`,
+		`b1`: `b2`,
+		`c1`: `c2`,
+		`d1`: `d2`,
+	}
+	if !reflect.DeepEqual(zerr.Data, expected) {
+		t.Fatal()
+	}
+}
+
+func TestFromCode(t *testing.T) {
+	zerr, ok := FromCode(BadRequest.Code)
+	require.Equal(t, true, ok)
+	require.Equal(t, zerr.Code, BadRequest.Code)
 }
