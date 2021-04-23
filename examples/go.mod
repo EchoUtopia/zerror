@@ -6,6 +6,7 @@ require (
 	github.com/EchoUtopia/zerror/v2 v2.0.1
 	github.com/gin-gonic/gin v1.6.3
 	github.com/sirupsen/logrus v1.8.1
+	github.com/stretchr/testify v1.4.0
 	google.golang.org/grpc v1.31.0
 )
 
