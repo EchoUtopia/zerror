@@ -7,6 +7,6 @@ import (
 
 func BenchmarkConvertToGrpcCode(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		ConvertToGrpcCode(zerror.StatusInternal)
+		ZStatus2GCode(zerror.StatusInternal)
 	}
 }

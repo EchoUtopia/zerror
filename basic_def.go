@@ -1,7 +1,17 @@
 package zerror
 
+type defMapT map[string]*Def
+
+var (
+	defMap  = defMapT{}
+)
 const (
 	CodeInternal = `zerror:internal`
+	codeBadRequest = `zerror:bad_request`
+	codeForbidden = `zerror:forbidden`
+	codeNofFound = `zerror:not_found`
+	codeUnauthenticated = `zerror:unauthenticated`
+	codeAlreadyExists =  `zerror:already_exists`
 )
 
 var Internal = &Def{
@@ -12,36 +22,48 @@ var Internal = &Def{
 }
 
 var BadRequest = &Def{
-	Code:        `zerror:bad_request`,
+	Code:        codeBadRequest,
 	Status:      StatusBadRequest,
 	Msg:         `bad request`,
 	Description: `bad request`,
 }
 
 var Forbidden = &Def{
-	Code:        `zerror:forbidden`,
+	Code:       codeForbidden ,
 	Status:      StatusPermissionDenied,
 	Msg:         `forbidden`,
 	Description: `you are forbidden to access`,
 }
 
 var NotFound = &Def{
-	Code:        `zerror:not_found`,
+	Code:       codeNofFound ,
 	Msg:         `not found`,
 	Status:      StatusNotFound,
 	Description: `resource not found`,
 }
 
 var Unauthenticated = &Def{
-	Code:        `zerror:unauthenticated`,
+	Code:        codeUnauthenticated,
 	Msg:         `unauthenticated`,
 	Status:      StatusUnauthenticated,
 	Description: `please login`,
 }
 
 var AlreadyExists = &Def{
-	Code:        `zerror:already_exists`,
+	Code:       codeAlreadyExists,
 	Msg:         `already exists`,
 	Status:      StatusAlreadyExists,
 	Description: `already exists`,
+}
+
+func (m *defMapT)init(){
+	inited := defMapT{
+		CodeInternal: Internal,
+		codeBadRequest: BadRequest,
+		codeForbidden: Forbidden,
+		codeNofFound: NotFound,
+		codeUnauthenticated: Unauthenticated,
+		codeAlreadyExists:AlreadyExists,
+	}
+	*m = inited
 }

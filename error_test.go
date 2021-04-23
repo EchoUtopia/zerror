@@ -36,7 +36,7 @@ func TestGenerateCode(t *testing.T) {
 
 	require.Equal(t, `custom-code`, data.Err.Code)
 	data.Err.Code = ``
-	defMap = make(map[string]*Def)
+	defMap.init()
 	initErrGroup(data)
 	require.Equal(t, `test-err:err`, data.Err.Code)
 

@@ -23,6 +23,7 @@ func WithRender(rf func() Render, renderMsg bool) Option {
 	}
 }
 
+// if not set, default 500
 func DefaultStatus(status Status) Option {
 	return func(options *Options) {
 		options.defaultStatus = status

@@ -10,7 +10,6 @@ import (
 
 var (
 	Manager = &Zmanager{Options: &Options{defaultStatus: StatusInvalid}}
-	defMap  = map[string]*Def{}
 )
 
 type Zmanager struct {
@@ -104,7 +103,7 @@ func Init(options ...Option) *Zmanager {
 		render: func() Render {
 			return new(StdResponse)
 		},
-		defaultStatus: 200,
+		defaultStatus: 500,
 	}
 	for _, setter := range options {
 		setter(do)
@@ -137,7 +136,7 @@ func unregister() {
 	Manager.registered = 0
 	Manager.errGroups = nil
 	Manager.defaultStatus = StatusInvalid
-	defMap = map[string]*Def{}
+	defMap.init()
 }
 
 func (m *Zmanager) Registered() bool {

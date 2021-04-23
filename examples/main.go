@@ -11,30 +11,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var (
-	Common = &CommonGroup{
-		// if prefix is empty, there's no prefix in code
-		Prefix: "",
-
-		// the code will be `args`
-		Args: (&zerror.Def{Code: ``, Status: 400, Msg: `args err`, Description: ``}).Extend(logrus_ze.ExtLogLvl, logrus.DebugLevel),
-	}
-
-	SmsCode           = &zerror.Def{Code: `sms:code`, Status: 500, Msg: `sms code`, Description: ``}
-	exampleContextKey = `context_key`
-)
-
-// this is error group
-type CommonGroup struct {
-	Prefix string
-	Args   *zerror.Def
-}
 
 // you can use middleware to extract some data in context, and log them
 func SetCtxValue() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
-		c.Request = c.Request.WithContext(context.WithValue(ctx, exampleContextKey, `context value`))
+		c.Request = c.Request.WithContext(context.WithValue(ctx, `context key`, `context value`))
 	}
 }
 
@@ -46,7 +28,7 @@ func HandleOriginal(c *gin.Context) {
 func HandleInternal(c *gin.Context) {
 	originalErr := errors.New(`original error`)
 	err1 := zerror.Internal.Wrap(originalErr)
-	err := Common.Args.Wrap(err1)
+	err := custom_error.Common.Args.Wrap(err1)
 	gin_ze.JSON(c, err)
 }
 
@@ -59,9 +41,9 @@ func HandleDefault(c *gin.Context) {
 
 func ExtractFromCtx(ctx context.Context) zerror.Data {
 	out := make(zerror.Data)
-	value, ok := ctx.Value(exampleContextKey).(string)
+	value, ok := ctx.Value(`context key`).(string)
 	if ok {
-		out[exampleContextKey] = value
+		out[`context key`] = value
 	}
 	return out
 }
@@ -70,14 +52,14 @@ func main() {
 	logrus.SetLevel(logrus.DebugLevel)
 	manager := zerror.Init(
 		// zerror.DebugMode(true),
-		// zerror.DefaultStatus(zerror.StatusBadRequest),
+		zerror.DefaultStatus(zerror.StatusBadRequest),
 		zerror.Extend(logrus_ze.ExtLogger, logrus.StandardLogger()),
 		zerror.Extend(gin_ze.ExtLogWhenRespond, true),
 		zerror.Extend(logrus_ze.ExtExtractDataFromCtx, logrus_ze.ExtractDataFromCtx(ExtractFromCtx)),
 	)
 
 	// error group must be registered
-	manager.RegisterGroups(Common, custom_error.Auth)
+	manager.RegisterGroups(custom_error.Common, custom_error.Auth)
 
 	r := gin.Default()
 	r.Use(SetCtxValue())
